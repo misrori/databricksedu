@@ -212,12 +212,11 @@ WHEN NOT MATCHED THEN INSERT *;
 ```dataset retail
 ```
 
-Land the **retail** order data as CSV files in a volume in your schema, then load them. Only 2 of the 3 order files land for now.
+Land **retail** order files as CSV in the `landing` volume of your schema, then load them. Two order files land now, a third one arrives later.
 
 ```python run
-# Land raw CSV files in a volume (2 of the 3 order files for now)
-LANDING = data.volume(CATALOG, SCHEMA) + "/lfc_landing"
-ds.land_files(LANDING, upto=2)
+# Land raw CSV files in a volume: 2 new order files (every run adds new ones)
+LANDING = data.files("retail", CATALOG, SCHEMA, volume="landing", folder="lfc_landing", n_files=2)
 ```
 
 ```python run
@@ -247,7 +246,7 @@ display(spark.sql(COPY))
 
 ```python run
 # 3) A new file arrives: COPY INTO loads only that one
-ds.land_files(LANDING, upto=3)
+data.files("retail", CATALOG, SCHEMA, volume="landing", folder="lfc_landing", n_files=1)
 display(spark.sql(COPY))
 ```
 

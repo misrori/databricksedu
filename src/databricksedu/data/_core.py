@@ -65,7 +65,7 @@ def _suggest(spark):
     return " Run SHOW CATALOGS / SHOW SCHEMAS IN <catalog> to find a schema you can write to."
 
 
-def use(catalog, schema, spark=None):
+def use(catalog, schema, spark=None, quiet=False):
     """Validate the target and run USE CATALOG / USE SCHEMA. Never creates a catalog or schema.
 
     Returns the quoted ``catalog.schema`` name.
@@ -76,7 +76,8 @@ def use(catalog, schema, spark=None):
         raise ValueError("Fill in CATALOG and SCHEMA first (got %r, %r)." % (catalog, schema) + _suggest(spark))
     spark.sql("USE CATALOG " + _q(catalog))
     spark.sql("USE SCHEMA " + _q(schema))
-    print("Using %s.%s" % (catalog, schema))
+    if not quiet:
+        print("Using %s.%s" % (catalog, schema))
     return "%s.%s" % (_q(catalog), _q(schema))
 
 

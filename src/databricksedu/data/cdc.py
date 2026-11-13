@@ -8,6 +8,7 @@ TITLE = "Change data capture feed"
 ICON = "🔁"
 SUMMARY = ("A 200-row customer snapshot and 600 change events (INSERT, UPDATE, DELETE) with a sequence number. "
            "Some events arrive out of order, so the sequence column matters.")
+FILES_TABLE = "customers_changes"   # data.files() adds new files of this table on every call
 USE_FOR = "MERGE INTO, AUTO CDC (APPLY CHANGES), SCD Type 1 and Type 2, Change Data Feed, deduplication"
 
 CITIES = ["Budapest", "Vienna", "Berlin", "Paris", "Madrid", "Milan", "London", "Dublin", "Warsaw", "Prague"]

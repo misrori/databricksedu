@@ -9,6 +9,7 @@ TITLE = "IoT sensor readings"
 ICON = "📡"
 SUMMARY = ("12 sites, 200 devices and 50,000 sensor readings over 30 days. Readings follow a daily temperature "
            "cycle and include a few duplicates, late arrivals and impossible values for data quality work.")
+FILES_TABLE = "readings"   # data.files() adds new files of this table on every call
 USE_FOR = "Structured Streaming, Auto Loader, watermarks, deduplication, expectations, time-series aggregation"
 
 SITES = [("Budapest", "HU", 47.50, 19.04), ("Vienna", "AT", 48.21, 16.37), ("Berlin", "DE", 52.52, 13.40),

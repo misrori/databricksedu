@@ -40,37 +40,28 @@ class BuildError(Exception):
 
 # ------------------------------------------------------------------ dataset setup block
 def dataset_cells(name):
-    """The three-step setup every demo starts with: generate -> pick catalog.schema -> SQL."""
+    """The setup every demo starts with: one cell that creates the tables, one that checks them."""
     desc = DATASETS[name]
-    ds = edu_data.generate(name, seed=42, scale=0.02)
-    views = ", ".join("src_" + t["name"] for t in desc["tables"])
-    gen = ('from databricksedu import data\n\n'
-           'ds = data.generate("%s", seed=42)   # deterministic: the same seed always gives the same rows\n'
-           'ds.register_views(spark)            # temporary views: %s\n'
-           'ds.preview()' % (name, views))
-    target = ('CATALOG = "FILL_IN"   # a catalog you can use, for example "dbacademy" or "main"\n'
-              'SCHEMA  = "FILL_IN"   # a schema you can write to, for example your "labuser..." schema\n\n'
-              'data.use(CATALOG, SCHEMA)           # runs USE CATALOG / USE SCHEMA. It never creates a schema.')
-    cells = [
-        {"k": "py", "t": "1️⃣ Generate the fake data (same seed = same rows)", "c": gen},
-        {"k": "py", "t": "2️⃣ Fill in your catalog and schema", "c": target},
-    ]
-    for title, stmts in ds.statements():
-        cells.append({"k": "sql", "t": "3️⃣ " + title.split(":")[0],
-                      "c": "-- %s\n%s" % (title, "\n\n".join(s + ";" for s in stmts))})
+    setup = ('from databricksedu import data\n\n'
+             'CATALOG = "FILL_IN"   # a catalog you can use, for example "dbacademy" or "main"\n'
+             'SCHEMA  = "FILL_IN"   # a schema you can write to, for example your "labuser..." schema\n\n'
+             'ds = data.create("%s", CATALOG, SCHEMA)   # Delta tables with keys; existing ones are replaced\n'
+             '# options: mode="view" (views over files) or mode="temp_view", drop_existing=False to keep tables'
+             % name)
     counts = "\nUNION ALL ".join("SELECT '%s' AS table_name, count(*) AS row_count FROM %s" % (t["name"], t["name"])
                                  for t in desc["tables"])
-    cells.append({"k": "sql", "t": "✅ Check the row counts", "c": counts + ";"})
-    return cells
+    return [
+        {"k": "py", "t": "🗃️ Create the demo tables in your catalog and schema", "c": setup},
+        {"k": "sql", "t": "✅ Check the row counts", "c": counts + ";"},
+    ]
 
 
 def dataset_block_html(name):
     cells = dataset_cells(name)
-    sql = "\n\n".join(c["c"] for c in cells if c["k"] == "sql")
+    sql = edu_data.generate(name, seed=42, scale=0.02).sql()
     return (render.dataset_html(DATASETS[name])
             + render.code_html(cells[0]["c"], "python", "run")
-            + render.code_html(cells[1]["c"], "python", "run")
-            + '<details class="solution"><summary>🗃️ Show the SQL that creates the tables and keys</summary>%s</details>'
+            + '<details class="solution"><summary>🗃️ Show the SQL that data.create() runs (tables and keys)</summary>%s</details>'
             % render.code_html(sql, "sql", "run"))
 
 
@@ -121,8 +112,8 @@ def section_cells(sec, num):
         elif b[0] == "dataset":
             cells.append(md_cell(head + render.dataset_html(DATASETS[b[1]])
                                  + '<div class="tryit"><span style="font-size:22px">🧪</span><div><b>Set up the demo data in '
-                                 'three steps.</b> Run the next cells in order: generate, choose where the tables go, '
-                                 'then create them with SQL.</div></div>'))
+                                 'one cell.</b> Fill in your catalog and schema in the next cell and run it. It creates '
+                                 'the tables and prints what it made: rows, size and columns.</div></div>'))
             cells += dataset_cells(b[1])
         else:
             if head:

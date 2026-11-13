@@ -8,6 +8,7 @@ TITLE = "Support knowledge base (generative AI)"
 ICON = "💬"
 SUMMARY = ("48 knowledge-base articles and 2,000 support tickets for a fictional smart-home company. Every "
            "ticket is about a product and an issue that one article answers, so retrieval can be checked.")
+FILES_TABLE = "tickets"   # data.files() adds new files of this table on every call
 USE_FOR = "Chunking, embeddings, Vector Search, RAG, AI Functions (ai_query, ai_classify), agent tools, evaluation sets"
 
 PRODUCTS = [

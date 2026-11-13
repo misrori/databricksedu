@@ -93,22 +93,26 @@ The data is shaped so that careless queries give wrong answers. That makes it go
 ```
 
 - **Skew:** product ids 1 to 8 are Books and are ordered far more often (product 1 alone has about 13,900 orders). Electronics (ids 33 to 40) are rare but expensive. Good for join skew and "count vs revenue" discussions.
-- **Bad files:** `ds.land_files(path)` also writes `fact_orders_bad/fact_orders_bad.csv` with four malformed rows (`five` as a quantity, `not-a-date`) for rescued-data and expectations demos.
+- **Bad files:** `data.files("retail", ...)` also writes `fact_orders_bad/fact_orders_bad.csv` with four malformed rows (`five` as a quantity, `not-a-date`) for rescued-data and expectations demos.
 
 ## 🐍 Use it from Python
 
-You do not need tables for every demo. The same seed gives the same rows in pandas, in Spark, or as raw files.
+One call puts the data where you need it and prints a report: what it created, rows, size and columns.
 
 ```python
 from databricksedu import data
 
-ds = data.generate("retail", seed=42)          # same seed, same rows
-ds.preview()                                   # first rows of every table
-pdf = ds.to_pandas("fact_orders")              # a pandas DataFrame
-small = data.generate("retail", scale=0.1)     # 6,000 orders instead of 60,000
+ds = data.create("retail", CATALOG, SCHEMA)                       # Delta tables with keys (replaces existing)
+data.create("retail", CATALOG, SCHEMA, mode="view")               # views over Parquet files in a volume
+data.create("retail", CATALOG, SCHEMA, mode="temp_view")          # temporary views, this session only
+data.create("retail", CATALOG, SCHEMA, drop_existing=False)       # keep tables that already exist
+data.create("retail", CATALOG, SCHEMA, scale=0.1)                 # 6,000 orders instead of 60,000
+
+data.files("retail", CATALOG, SCHEMA, volume="landing", n_files=3)   # 3 new CSV files; run again for more
+
+pdf = ds.to_pandas("fact_orders")              # a pandas DataFrame (no Spark needed)
 print(ds.sql())                                # the full CREATE TABLE / key script
-ds.land_files(data.volume(CATALOG, SCHEMA) + "/landing", parts=3, upto=1)   # raw CSVs for Auto Loader
-ds.drop_tables()                               # clean up (the schema stays)
+ds.drop_tables(CATALOG, SCHEMA)                # clean up (the schema stays)
 ```
 
 ## 🧭 Cheat sheet
@@ -119,5 +123,6 @@ ds.drop_tables()                               # clean up (the schema stays)
 | Revenue | `quantity * unit_price * (1 - discount)` |
 | Order to customer | `JOIN dim_customer USING (customer_id)` |
 | Order to product | `JOIN dim_product USING (product_id)` |
-| Smaller data | `data.generate("retail", scale=0.1)` |
+| Smaller data | `data.create("retail", CATALOG, SCHEMA, scale=0.1)` |
+| New raw files | `data.files("retail", CATALOG, SCHEMA, volume="landing")` |
 | Clean up | `ds.drop_tables()` |

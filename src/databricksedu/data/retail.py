@@ -8,6 +8,7 @@ TITLE = "Retail star schema"
 ICON = "🛒"
 SUMMARY = ("500 customers, 40 products and 60,000 orders (Jan 2025 - Oct 2026). Cheap Books sell far more "
            "often than expensive Electronics, and the orders include CANCELLED and TEST rows to filter out.")
+FILES_TABLE = "fact_orders"   # data.files() adds new files of this table on every call
 USE_FOR = "SQL, joins, aggregations, Delta Lake internals, medallion pipelines, metric views, dashboards"
 
 

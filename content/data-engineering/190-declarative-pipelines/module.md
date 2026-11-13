@@ -161,9 +161,8 @@ A **full refresh** empties the streaming tables and re-reads every source from t
 A pipeline cannot be created from a notebook cell, so the pipeline code in this module is display-only. You can prepare its source data here.
 
 ```python run
-# Land the first of three raw order files in a volume
-landing = data.volume(CATALOG, SCHEMA) + "/pl_landing"
-ds.land_files(landing, table="fact_orders", parts=3, upto=1, fmt="csv")
+# Land the first raw order file (20,000 orders) in a volume; fresh=True starts clean
+landing = data.files("retail", CATALOG, SCHEMA, volume="landing", folder="pl_landing", n_files=1, fresh=True)
 
 orders_path = landing + "/fact_orders"
 print("Use this path in read_files:", orders_path)
@@ -178,7 +177,7 @@ display(spark.sql(f"""
 """))
 ```
 
-> **Run it yourself** (needs permission to create pipelines and serverless): 1. Open **Jobs & Pipelines** and create an ETL pipeline. 2. Set its default catalog and schema to your `CATALOG` and `SCHEMA`. 3. Paste the SQL file from this module into the source file and put in the path printed above. 4. Click **Start** and watch the graph. 5. Run `ds.land_files(landing, table="fact_orders", parts=3, upto=2, fmt="csv")` here, start the pipeline again, and check in the update details that bronze read only 20,000 new rows.
+> **Run it yourself** (needs permission to create pipelines and serverless): 1. Open **Jobs & Pipelines** and create an ETL pipeline. 2. Set its default catalog and schema to your `CATALOG` and `SCHEMA`. 3. Paste the SQL file from this module into the source file and put in the path printed above. 4. Click **Start** and watch the graph. 5. Run `data.files("retail", CATALOG, SCHEMA, volume="landing", folder="pl_landing")` here to land one more file, start the pipeline again, and check in the update details that bronze read only 20,000 new rows.
 
 ## Exercise 1: predict the gold table
 

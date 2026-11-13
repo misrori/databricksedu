@@ -137,20 +137,19 @@ Every file source also offers the hidden `_metadata` column: `_metadata.file_pat
 ```dataset retail
 ```
 
-Land the first of three order files in a volume. The cell starts clean every time you run it.
+Land the first order file in the `landing` volume. The cell starts clean every time you run it.
 
 ```python run
 # Land the first file (clean start)
 import shutil
 from pyspark.sql import functions as F
 
-vol = data.volume(CATALOG, SCHEMA)
-state = vol + "/autoloader_state"                       # schema and checkpoint live here
-for p in (vol + "/autoloader_demo", state):
-    shutil.rmtree(p, ignore_errors=True)
+state = data.volume(CATALOG, SCHEMA) + "/autoloader_state"   # schema and checkpoint live here
+shutil.rmtree(state, ignore_errors=True)
 spark.sql("DROP TABLE IF EXISTS al_orders_bronze")
 
-landing = ds.land_files(vol + "/autoloader_demo", parts=3, upto=1)
+# one new file of 20,000 orders; fresh=True empties the folder first
+landing = data.files("retail", CATALOG, SCHEMA, volume="landing", folder="autoloader_demo", n_files=1, fresh=True)
 ```
 
 ```python run
@@ -175,8 +174,8 @@ ingest()
 
 ```python run
 # A second file arrives: run the same stream again
-ds.land_files(landing, parts=3, upto=2)
-ingest()        # part_1 is not read again: still 20,000 rows from it
+data.files("retail", CATALOG, SCHEMA, volume="landing", folder="autoloader_demo", n_files=1)
+ingest()        # part_0001 is not read again: still 20,000 rows from it
 ```
 
 ```python run
@@ -188,7 +187,7 @@ copy = f"""
   FILEFORMAT = CSV
   FORMAT_OPTIONS ('header' = 'true', 'inferSchema' = 'true')
   COPY_OPTIONS ('mergeSchema' = 'true')"""
-spark.sql(copy).show()   # loads part_1 and part_2: 40,000 rows
+spark.sql(copy).show()   # loads part_0001 and part_0002: 40,000 rows
 spark.sql(copy).show()   # 0 rows: both files are already recorded
 ```
 
@@ -196,21 +195,18 @@ spark.sql(copy).show()   # 0 rows: both files are already recorded
 
 ## Exercise 1: rescue the bad rows
 
-`ds.land_files` also writes `fact_orders_bad/fact_orders_bad.csv`, four rows with broken values. Load it with Auto Loader and schema hints. Predict which rows get a `_rescued_data` value.
+`data.files("retail", ...)` also writes `fact_orders_bad/fact_orders_bad.csv`, four rows with broken values. Load it with Auto Loader and schema hints. Predict which rows get a `_rescued_data` value.
 
 ```python todo
-# TODO 1: base = data.volume(CATALOG, SCHEMA) + "/al_rescue"; ds.land_files(base, parts=3, upto=1)
+# TODO 1: base = data.files("retail", CATALOG, SCHEMA, volume="landing", folder="al_rescue", fresh=True)
 # TODO 2: readStream cloudFiles (csv, header, inferColumnTypes) from base + "/fact_orders_bad"
 #         with cloudFiles.schemaHints = "order_date DATE, quantity INT, discount DOUBLE"
 # TODO 3: write with availableNow to al_orders_rescued, then show the rows with _rescued_data
 ```
 
 ```python solution
-import shutil
-base = data.volume(CATALOG, SCHEMA) + "/al_rescue"
-shutil.rmtree(base, ignore_errors=True)
 spark.sql("DROP TABLE IF EXISTS al_orders_rescued")
-ds.land_files(base, parts=3, upto=1)
+base = data.files("retail", CATALOG, SCHEMA, volume="landing", folder="al_rescue", fresh=True)
 
 (spark.readStream.format("cloudFiles")
     .option("cloudFiles.format", "csv")
@@ -234,16 +230,13 @@ spark.sql("SELECT order_id, order_date, quantity, discount, _rescued_data FROM a
 Land two files, run `COPY INTO` twice, then once more with `'force' = 'true'`. Predict the row count after each run.
 
 ```python todo
-# TODO 1: base = data.volume(CATALOG, SCHEMA) + "/ci_force"; ds.land_files(base, parts=3, upto=2)
+# TODO 1: base = data.files("retail", CATALOG, SCHEMA, volume="landing", folder="ci_force", n_files=2, fresh=True)
 # TODO 2: create ci_force_orders, COPY INTO it from base + "/fact_orders" twice, count rows
 # TODO 3: COPY INTO again with COPY_OPTIONS ('force' = 'true', 'mergeSchema' = 'true'), count rows
 ```
 
 ```python solution
-import shutil
-base = data.volume(CATALOG, SCHEMA) + "/ci_force"
-shutil.rmtree(base, ignore_errors=True)
-ds.land_files(base, parts=3, upto=2)
+base = data.files("retail", CATALOG, SCHEMA, volume="landing", folder="ci_force", n_files=2, fresh=True)
 spark.sql("DROP TABLE IF EXISTS ci_force_orders")
 spark.sql("CREATE TABLE IF NOT EXISTS ci_force_orders")
 

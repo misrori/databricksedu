@@ -44,25 +44,29 @@ databricksedu.save("delta-table-anatomy")      # copy its notebooks to /Workspac
 databricksedu.save("data-engineering")         # a whole track, or save("all")
 ```
 
-## Seeded demo data
+## Demo data in one line
 
-The same seed always gives the same rows, so a whole class works on identical data. Every dataset has several
-tables joined by real primary and foreign keys.
+Six datasets (retail, iot, churn, support, hr, cdc), each with several tables joined by real primary and
+foreign keys. Give a catalog and a schema; one call creates everything and prints a report (what it created,
+rows, size, columns). The catalog and schema must exist: nothing here creates them.
 
 ```python
 from databricksedu import data
 
-ds = data.generate("retail", seed=42)    # retail, iot, churn, support, hr, cdc
-ds.preview()
+CATALOG, SCHEMA = "main", "my_schema"
 
-CATALOG = "FILL_IN"                       # a catalog you can use
-SCHEMA = "FILL_IN"                        # a schema you can write to (it is never created for you)
-ds.create_tables(CATALOG, SCHEMA)         # prints and runs the CREATE TABLE / PRIMARY KEY / FOREIGN KEY SQL
-print(ds.sql())                           # ...or just show the script
+data.create("retail", CATALOG, SCHEMA)                        # Delta tables with keys (existing ones replaced)
+data.create("retail", CATALOG, SCHEMA, mode="view")           # views over Parquet files in a volume
+data.create("retail", CATALOG, SCHEMA, mode="temp_view")      # temporary views, this session only
+data.create("retail", CATALOG, SCHEMA, drop_existing=False)   # keep tables that already exist
+
+data.files("retail", CATALOG, SCHEMA, volume="landing", n_files=3)            # 3 new CSV files
+data.files("iot", CATALOG, SCHEMA, volume="landing", n_files=1, fmt="json")   # run again: new rows, new files
 ```
 
-`data.datasets()` describes them all. `ds.to_pandas("fact_orders")` gives a pandas DataFrame, and
-`ds.land_files(path)` writes raw CSV or JSON files for ingestion and streaming demos.
+`data.create` uses a fixed seed, so a whole class works on identical tables. `data.files` has no fixed seed:
+every call adds new files with new rows and new ids, which is what Auto Loader and `COPY INTO` demos need.
+`data.datasets()` describes them all; `data.generate("retail").to_pandas("fact_orders")` works without Spark.
 
 ## Practice exams
 

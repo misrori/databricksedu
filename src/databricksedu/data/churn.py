@@ -9,6 +9,7 @@ TITLE = "Telco churn (machine learning)"
 ICON = "📉"
 SUMMARY = ("5,000 telco subscribers with a churn label that really depends on the features (contract type, "
            "support calls, payment failures, tenure), plus 30,000 rows of monthly usage for feature engineering.")
+FILES_TABLE = "usage_monthly"   # data.files() adds new files of this table on every call
 USE_FOR = "MLflow tracking, feature tables, train/test splits, hyperparameter tuning, model serving, drift monitoring"
 
 

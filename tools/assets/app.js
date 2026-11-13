@@ -1,6 +1,11 @@
 /* databricksedu: the in-notebook app (home, slides, document view). */
 (function () {
   var D = window.DBE, cfg = D.cfg || {}, root = document.getElementById('dbe');
+  // the page as it was served (before rendering), so it can be reopened in a full browser tab
+  var SRC = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+  var START = window.DBE_START || {};
+  if (START.route) cfg.route = START.route;
+  if (START.page) { cfg.bar = false; root.classList.add('page'); }
   var CTA_URL = 'https://goldhandacademy.com';
   var mods = {}, cats = {};
   D.categories.forEach(function (c) {
@@ -23,7 +28,7 @@
       '<button class="hbtn" id="bOver" title="Slide overview (O)" style="display:none">▦</button>' +
       '<button class="hbtn pri" id="bSave" style="display:none">💾 Save to workspace</button>' +
       '<button class="hbtn" id="bSize" title="Window height">↕</button>' +
-      '<button class="hbtn" id="bFull" title="Full screen (F)" style="display:none">⛶</button>' +
+      '<button class="hbtn" id="bFull" title="Full screen (F)">⛶</button>' +
     '</div><div id="bar"></div>' +
     '<div id="main">' +
       '<div id="home"></div>' +
@@ -325,21 +330,37 @@
     H = h; root.style.height = h + 'px';
     try { if (window.frameElement && window.frameElement.hasAttribute('data-dbe')) window.frameElement.style.height = (h + 4) + 'px'; } catch (e) { }
   }
-  setH(H);
+  if (START.page) $('bSize').style.display = 'none'; else setH(H);
   $('bSize').onclick = function () {
     var next = sizes.filter(function (s) { return s > H; })[0] || sizes[0];
     setH(next);
   };
   var fsOk = document.fullscreenEnabled || document.webkitFullscreenEnabled;
-  if (fsOk) {
-    $('bFull').style.display = '';
-    $('bFull').onclick = toggleFs;
-    document.addEventListener('fullscreenchange', function () { root.classList.toggle('fs', !!document.fullscreenElement); });
+  $('bFull').onclick = toggleFs;
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+    document.addEventListener(ev, function () { root.classList.toggle('fs', !!(document.fullscreenElement || document.webkitFullscreenElement)); });
+  });
+  function route() {
+    if (!S.mod) return 'cat/' + S.cat;
+    return S.mode === 'doc' ? 'doc/' + S.mod.id : 'slides/' + S.mod.id + '/' + S.idx;
+  }
+  // Notebook outputs (Databricks displayHTML) live in an iframe that may not allow fullscreen:
+  // then the app is reopened in its own browser tab, where F / ⛶ gives real full screen.
+  function openTab() {
+    var w = null;
+    try { w = window.open('', '_blank'); } catch (e) { }
+    if (!w) { setH(Math.max(H, (window.screen && screen.availHeight || 900) - 160)); root.scrollIntoView(); return; }
+    var start = '<script>window.DBE_START=' + JSON.stringify({ route: route(), page: true }) + ';<\/script>';
+    w.document.open();
+    w.document.write(SRC.replace('<script>window.DBE=', start + '<script>window.DBE='));
+    w.document.close();
   }
   function toggleFs() {
-    if (!fsOk) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+    if (document.fullscreenElement || document.webkitFullscreenElement) return (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    if (!fsOk) return openTab();
+    var req = root.requestFullscreen || root.webkitRequestFullscreen, p = null;
+    try { p = req.call(root); } catch (e) { return openTab(); }
+    if (p && p.catch) p.catch(openTab);
   }
   document.addEventListener('keydown', function (e) {
     if (/INPUT|TEXTAREA/.test((e.target.tagName || ''))) return;

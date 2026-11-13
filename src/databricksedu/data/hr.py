@@ -8,6 +8,7 @@ TITLE = "HR with sensitive columns (governance)"
 ICON = "🧑‍💼"
 SUMMARY = ("8 departments and 300 employees with synthetic PII (email, national id, salary) and a manager "
            "hierarchy. Made for row filters, column masks, dynamic views and privilege exercises.")
+FILES_TABLE = "employees"   # data.files() adds new files of this table on every call
 USE_FOR = "Unity Catalog privileges, row filters, column masks, dynamic views, pseudonymization, self joins"
 
 DEPARTMENTS = [("Engineering", "HU"), ("Data", "HU"), ("Sales", "DE"), ("Marketing", "DE"),

@@ -78,14 +78,13 @@ FROM readings;
 ```python
 from databricksedu import data
 
-ds = data.generate("iot", seed=42)
-landing = data.volume(CATALOG, SCHEMA) + "/iot_landing"
-ds.land_files(landing, parts=5, upto=1, fmt="json")   # first file of readings arrives
-ds.land_files(landing, parts=5, upto=3, fmt="json")   # two more files arrive later
+data.create("iot", CATALOG, SCHEMA)                    # tables: sites, devices, readings
+landing = data.files("iot", CATALOG, SCHEMA, volume="landing", n_files=1, fmt="json")   # first file arrives
+data.files("iot", CATALOG, SCHEMA, volume="landing", n_files=2, fmt="json")             # two more, new rows
 # point Auto Loader or a streaming read at landing + "/readings"
 ```
 
-`land_files` never rewrites a file that exists, so an incremental reader only sees the new ones.
+Every `data.files` call writes **new** files with new rows and new `reading_id`s and never rewrites old ones, so an incremental reader only sees the new files.
 
 ## 🧭 Cheat sheet
 
@@ -94,5 +93,5 @@ ds.land_files(landing, parts=5, upto=3, fmt="json")   # two more files arrive la
 | Event time vs arrival | `event_ts` vs `ingest_ts` |
 | Valid temperatures | `temperature BETWEEN -60 AND 60` |
 | Deduplicate | key `(device_id, event_ts)` |
-| Streaming files | `ds.land_files(path, parts=5, upto=n, fmt="json")` |
-| Smaller data | `data.generate("iot", scale=0.1)` |
+| Streaming files | `data.files("iot", CATALOG, SCHEMA, volume="landing", n_files=n, fmt="json")` |
+| Smaller data | `data.create("iot", CATALOG, SCHEMA, scale=0.1)` |
