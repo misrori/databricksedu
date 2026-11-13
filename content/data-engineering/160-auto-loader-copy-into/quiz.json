@@ -1,0 +1,22 @@
+[
+  {"q": "A scheduled job runs the same `COPY INTO` command every hour over a folder that only ever gets new files. What happens to files loaded in earlier runs?",
+   "o": ["They are loaded again, creating duplicates", "They are skipped, because COPY INTO records which files it has already loaded into the target table", "They are deleted from the folder", "The command fails until they are moved away"],
+   "c": 1,
+   "e": "COPY INTO is idempotent: loaded files are tracked with the target table and skipped on later runs. Only `COPY_OPTIONS ('force' = 'true')` reloads them."},
+  {"q": "Where does Auto Loader keep the list of files it has already processed?",
+   "o": ["In the checkpoint location, in a RocksDB key-value store", "In `cloudFiles.schemaLocation`", "In the `_rescued_data` column", "In a hidden table in the target schema"],
+   "c": 0,
+   "e": "The checkpoint holds the stream's offsets and commits plus the RocksDB file state. That is what makes Auto Loader exactly-once, and why deleting the checkpoint causes a full reload."},
+  {"q": "An Auto Loader stream uses `cloudFiles.schemaEvolutionMode = rescue`. A new file has an extra column `coupon`. What happens?",
+   "o": ["The stream fails and adds `coupon` to the schema", "The `coupon` column is added to the table at once", "The schema stays the same and the `coupon` values go into `_rescued_data`", "The whole file is skipped"],
+   "c": 2,
+   "e": "`rescue` never evolves the schema and never fails on new columns. Unknown columns and mismatched values are kept as JSON in `_rescued_data`."},
+  {"q": "With the default mode `addNewColumns`, a file brings a new column. What should the pipeline be set up to do?",
+   "o": ["Nothing: the stream adds the column and keeps running in the same batch", "Delete the checkpoint and start over", "Switch to `none` mode", "Restart the stream, for example with job retries: it fails once, records the new schema, and includes the column after the restart"],
+   "c": 3,
+   "e": "`addNewColumns` stops the stream with an error after updating the schema in the schema location. On restart the new column is part of the schema."},
+  {"q": "You land files in a folder with millions of files and want the cheapest scheduled load that only processes new files and then stops. Which setup fits best?",
+   "o": ["`SELECT * FROM read_files(...)` every hour", "Auto Loader with `trigger(availableNow=True)` run from a scheduled job", "`COPY INTO` with `force = true`", "A stream without a trigger on an always-on cluster"],
+   "c": 1,
+   "e": "Auto Loader scales to millions of files, and `availableNow` processes everything new and then stops, so you pay only while it runs. `read_files` in batch rereads all files."}
+]

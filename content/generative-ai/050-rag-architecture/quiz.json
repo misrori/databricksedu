@@ -1,0 +1,22 @@
+[
+  {"q": "Warranty terms change every few weeks and the support bot must always quote the current version. What is the best approach?",
+   "o": ["Fine-tune the model every time the terms change", "RAG over the warranty documents, with the index synced after each update", "Raise the temperature so the model explores more answers", "Paste the old terms into the system prompt"],
+   "c": 1,
+   "e": "Retrieval reads the current documents at question time. Fine-tuning bakes facts into weights, which go stale until the next training run."},
+  {"q": "A wrong answer is reported. The trace shows that the chunk with the correct fact was not among the retrieved chunks. What kind of error is this?",
+   "o": ["A generation error: rewrite the prompt", "A tokenization error", "A retrieval error: improve search, chunking, filters or k", "A sampling error: lower the temperature"],
+   "c": 2,
+   "e": "The model can only use what is in the prompt. If the right chunk never arrived, no prompt or model change can fix the answer; retrieval must improve."},
+  {"q": "Which steps belong to the **online** path of a RAG application?",
+   "o": ["Parse files, chunk them, embed the chunks", "Sync the index, enable Change Data Feed", "Fine-tune, register, deploy", "Retrieve chunks for the question, add them to the prompt, generate, return citations"],
+   "c": 3,
+   "e": "Parsing, chunking, embedding and syncing happen offline. Per request, the app retrieves, augments the prompt, generates and cites."},
+  {"q": "You raise k from 3 to 20 retrieved chunks. What is the most likely effect?",
+   "o": ["Longer, more expensive prompts and more noise, which can bury the relevant chunk (lost in the middle)", "Lower cost because the model needs fewer output tokens", "No effect: models read every chunk equally well", "Retrieval recall goes down"],
+   "c": 0,
+   "e": "More chunks raise the chance that the right one is included, but every chunk costs input tokens, and models use facts in the middle of long contexts less reliably."},
+  {"q": "Why does a good RAG prompt include source ids and a rule allowing \"I don't know\"?",
+   "o": ["Both are required by Vector Search", "Ids let the answer cite its sources, and the way out stops the model from guessing when retrieval found nothing useful", "They reduce the number of input tokens", "They make the model run on provisioned throughput"],
+   "c": 1,
+   "e": "Citations make answers checkable. Without an explicit way out, a model produces a plausible answer even when the context does not support one."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A batch job loads `models:/prod.ml.churn_model@champion`. You want it to use version 7 from tomorrow. What do you change?",
+   "o": ["Edit the job to load version 7", "Delete versions 1 to 6", "Move the `champion` alias to version 7", "Transition version 7 to the Production stage"],
+   "c": 2,
+   "e": "The job resolves the alias at load time. Moving the alias promotes the version without touching the job, and stages do not exist in Unity Catalog."},
+  {"q": "Which is true about model versions and aliases in Unity Catalog?",
+   "o": ["Versions are immutable; an alias points to exactly one version and can be moved", "An alias can point to several versions at once", "Versions can be edited after registration", "Each version can have only one tag"],
+   "c": 0,
+   "e": "A version is a fixed registered copy. An alias is a movable pointer, unique per model, which is what makes promotion and rollback cheap."},
+  {"q": "`mlflow.register_model` fails because the model has no input or output schema. What is missing?",
+   "o": ["An alias", "A version tag", "The `EXECUTE` privilege", "A signature, logged with `signature=` or inferred from an `input_example`"],
+   "c": 3,
+   "e": "Unity Catalog requires every registered model version to have a signature."},
+  {"q": "Which privilege lets a user register a new model in a schema?",
+   "o": ["`EXECUTE` on the schema", "`CREATE MODEL` on the schema, plus `USE CATALOG` and `USE SCHEMA`", "`SELECT` on the schema", "`MODIFY` on the catalog"],
+   "c": 1,
+   "e": "`CREATE MODEL` on the schema allows registering models there. `EXECUTE` on a model allows loading it for inference."},
+  {"q": "Prod data is only reachable from the prod workspace, and the model retrains weekly. Which promotion pattern fits best?",
+   "o": ["Train in dev on a copy of prod data and copy the model", "Deploy code: the reviewed training job runs in prod and registers to the prod catalog", "Use workspace registry stages", "Email the model file to the prod team"],
+   "c": 1,
+   "e": "Deploying code is the default recommendation: prod data never leaves prod and retraining is automated. Copying model versions fits training that is too costly to repeat."}
+]

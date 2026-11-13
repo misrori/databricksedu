@@ -1,0 +1,22 @@
+[
+  {"q": "An Auto Loader stream uses the default schema evolution mode. A new JSON file arrives with an extra column `coupon_code`, and the stream stops with an error. What happens next?",
+   "o": ["The column is lost forever; switch to `rescue` mode to keep it", "Auto Loader must be rebuilt with a new checkpoint location", "The schema was already updated, so the stream picks up `coupon_code` when it restarts, for example through job retries", "The file is skipped and the stream continues on its own"],
+   "c": 2,
+   "e": "With `addNewColumns` the stream fails once by design and records the new schema in the schema location. On restart the column is included. Configure retries in the Lakeflow Job so the restart is automatic."},
+  {"q": "The analysts group must be able to read every table in `main.gold`, including tables created next month. Which grants are enough?",
+   "o": ["`USE CATALOG` on `main`, plus `USE SCHEMA` and `SELECT` on schema `main.gold`", "`SELECT` on each table in `main.gold`", "`SELECT` on schema `main.gold` only", "`ALL PRIVILEGES` on catalog `main`"],
+   "c": 0,
+   "e": "A grant on a schema is inherited by all current and future tables in it. The group also needs `USE CATALOG` and `USE SCHEMA` to reach the tables. `ALL PRIVILEGES` would work but gives far more than reading."},
+  {"q": "A job ends with a task that deletes temporary files. It must run after the three upstream tasks finish, even when one of them failed. Which setting does that?",
+   "o": ["Run if: All succeeded", "Run if: At least one failed", "A retry policy of 3 on the cleanup task", "Run if: All done"],
+   "c": 3,
+   "e": "All done starts the task when every upstream task has finished, whatever the result. All succeeded, the default, would mark it Upstream failed. At least one failed would skip it on successful runs."},
+  {"q": "A revenue aggregate joins two silver tables, whose rows are sometimes updated or deleted. Two hundred analysts open a dashboard built on it every morning. Which object should feed the dashboard?",
+   "o": ["A view, so the result is always current", "A materialized view refreshed on a schedule", "A streaming table over the silver tables", "A temporary view in each analyst's session"],
+   "c": 1,
+   "e": "A materialized view computes the result once per refresh and stays correct when source rows are updated or deleted. A view would recompute the join for every query. A streaming table processes each source row only once, so it cannot reflect updates and deletes."},
+  {"q": "In the Spark UI, one task of a join stage runs for 25 minutes while the other 199 finish in seconds. Its shuffle read is 40 times the median. What is the best first fix?",
+   "o": ["Add more worker nodes", "Lower `spark.sql.shuffle.partitions` to 50", "Treat it as data skew: rely on AQE skew join handling or salt the hot key", "Increase the driver memory"],
+   "c": 2,
+   "e": "One straggler with a far larger shuffle read than the median is a skewed key. More workers do not split a single task, and fewer shuffle partitions make partitions even bigger."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A dashboard is published with **share data permissions** (embedded credentials). A viewer without `SELECT` on the source tables opens it. What happens?",
+   "o": ["The widgets show a permission error", "The viewer sees only rows allowed by row filters for the viewer", "The viewer sees the data, because queries run with the publisher's credentials", "The dashboard asks the viewer to request access"],
+   "c": 2,
+   "e": "With embedded credentials every query runs as the publisher. Choose individual data permissions when each viewer must see only their own data."},
+  {"q": "A chart must show the top 10 products **within** a chosen category, ranked after aggregation with `LIMIT 10`. How should the category reach the query?",
+   "o": ["As a query parameter used in the `WHERE` clause", "As a cross-filter from another chart", "As a field filter on the result", "By creating one dataset per category"],
+   "c": 0,
+   "e": "The category has to restrict the rows before aggregation and ranking. A field filter only works on the result, so it would filter the already-limited top 10."},
+  {"q": "You change a chart in the draft of a published dashboard. When do viewers see the change?",
+   "o": ["After the warehouse restarts", "Immediately", "After the next scheduled refresh", "After you publish the dashboard again"],
+   "c": 3,
+   "e": "Viewers see the published version, which is a snapshot. Draft edits reach them only when you publish again."},
+  {"q": "Why does the lecture put the TEST and CANCELLED rule and the revenue formula into one dataset or view?",
+   "o": ["Widgets cannot run SQL", "Every widget then shares the same definitions, so numbers cannot disagree", "It makes the dashboard use the result cache", "Field filters only work on views"],
+   "c": 1,
+   "e": "One dataset can feed many widgets. Defining rules once keeps all charts consistent and makes changes a single edit."},
+  {"q": "The operations team must be told when daily revenue drops below a threshold. What is the right tool?",
+   "o": ["A SQL alert with a condition and a notification destination", "A subscription that emails the dashboard every morning", "A global filter on the dashboard", "A cross-filter on the revenue chart"],
+   "c": 0,
+   "e": "An alert runs its own query on a schedule, evaluates the condition and notifies only when it is met. A subscription sends a snapshot regardless of the value."}
+]

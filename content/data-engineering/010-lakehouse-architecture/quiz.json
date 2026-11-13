@@ -1,0 +1,22 @@
+[
+  {"q": "A team stores raw JSON and Parquet files in S3 and queries them with Spark. Two jobs write at the same time and a report reads half-written results. Which lakehouse ingredient is missing?",
+   "o": ["A transaction log such as Delta Lake", "A columnar file format", "A bigger cluster", "A second copy of the data in a warehouse"],
+   "c": 0,
+   "e": "Without a transaction log, readers see files as soon as they appear. Delta Lake makes a write visible only when its commit file is written, so readers never see partial results."},
+  {"q": "What does Unity Catalog store for a managed Delta table?",
+   "o": ["The Parquet data files", "A cached copy of the rows for fast queries", "Metadata such as the name, schema, permissions and storage location", "Only the table's transaction log"],
+   "c": 2,
+   "e": "Unity Catalog is the governance layer. The data files and the Delta log live in cloud object storage; Unity Catalog keeps metadata and decides who may access them."},
+  {"q": "Where do the machines of classic compute run?",
+   "o": ["In the Databricks control plane", "In the customer's cloud account", "In the Unity Catalog metastore", "Always in Databricks' serverless account"],
+   "c": 1,
+   "e": "Classic clusters are VMs in your own cloud account. Serverless compute runs in a compute plane that Databricks manages in its own account."},
+  {"q": "A user queries a table they have `SELECT` on. How does the compute get access to the files in storage?",
+   "o": ["The user's personal storage key is sent with the query", "The files are copied into the control plane first", "The cluster has full access to all buckets", "Unity Catalog gives the compute short-lived credentials scoped to the table's location"],
+   "c": 3,
+   "e": "After checking permissions, Unity Catalog vends temporary, down-scoped credentials. Users and notebooks never need to handle storage keys."},
+  {"q": "Which statement about serverless compute is correct?",
+   "o": ["It starts in seconds and Databricks manages the runtime and scaling", "It lets you choose any VM type and install init scripts", "It stores your tables inside the compute nodes", "It is required for Unity Catalog"],
+   "c": 0,
+   "e": "Serverless trades low-level control for fast start-up and no infrastructure management. Data stays in object storage either way, and Unity Catalog also works with classic compute."}
+]

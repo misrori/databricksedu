@@ -1,0 +1,22 @@
+[
+  {"q": "A Genie space keeps answering \"net revenue\" questions without applying discounts. What is the most effective fix?",
+   "o": ["Add a paragraph of general instructions explaining revenue in detail", "Ask users to rate the wrong answers so Genie retrains", "Add more tables to the space so Genie has more context", "Add an example SQL query (or SQL expression) that defines net revenue, and comment the columns"],
+   "c": 3,
+   "e": "Vetted SQL definitions and good metadata are reused directly when a question matches. Long text instructions are weaker hints, and ratings do not retrain the space."},
+  {"q": "An end user can open a Genie space but has no `SELECT` on `fact_orders`. What happens when they ask about orders?",
+   "o": ["Genie answers using the author's permissions", "The query fails or returns nothing they cannot access, because it runs with their own Unity Catalog permissions", "Genie answers from cached results", "Genie switches to a different table"],
+   "c": 1,
+   "e": "Genie always executes SQL with the asking user's Unity Catalog permissions, including row filters and column masks."},
+  {"q": "Why does declaring primary and foreign key constraints help Genie?",
+   "o": ["They speed up the SQL warehouse start", "They make the warehouse enforce uniqueness", "They tell Genie how tables join, so it writes correct joins", "They are required before a table can be added to a space"],
+   "c": 2,
+   "e": "PK and FK constraints in Unity Catalog are informational. Genie reads them as metadata and uses them to choose join keys."},
+  {"q": "What is a Genie benchmark for?",
+   "o": ["Scoring answer accuracy against known-correct SQL after each change to the space", "Limiting how many questions a user can ask", "Training a new language model on your data", "Measuring how fast the SQL warehouse answers"],
+   "c": 0,
+   "e": "A benchmark is a set of test questions with ground-truth SQL. Re-running it shows whether a change improved or broke answers."},
+  {"q": "Which permission do end users of a Genie space **not** need?",
+   "o": ["CAN VIEW or CAN RUN on the space", "`SELECT` on the tables in the space", "CAN USE on the SQL warehouse", "`USE CATALOG` and `USE SCHEMA` on the parents of those tables"],
+   "c": 2,
+   "e": "The space runs on its configured warehouse. Users need access to the space and to the data through Unity Catalog, but not a warehouse permission."}
+]

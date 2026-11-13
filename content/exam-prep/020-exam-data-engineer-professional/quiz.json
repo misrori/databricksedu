@@ -1,0 +1,22 @@
+[
+  {"q": "A pipeline reads a CDC feed where updates for the same `customer_id` sometimes arrive out of order. The business needs the full history of address changes, but changes to `last_login` must not create new versions. What is the best design?",
+   "o": ["A `foreachBatch` MERGE that keeps the row with the latest arrival time", "AUTO CDC with `SEQUENCE BY` on the event timestamp, `STORED AS SCD TYPE 2` and a track-history column list that excludes `last_login`", "AUTO CDC with `STORED AS SCD TYPE 1` and `APPLY AS TRUNCATE`", "A materialized view that selects the latest row per key"],
+   "c": 1,
+   "e": "`SEQUENCE BY` orders events per key regardless of arrival order, SCD Type 2 keeps history, and the track-history column list limits which column changes create a new version. Truncates are only supported for SCD Type 1."},
+  {"q": "A streaming query counts events per device in 5-minute windows and writes in append mode. The query fails to start. What is missing?",
+   "o": ["A watermark on the event-time column", "Complete output mode", "A trigger of `availableNow`", "A larger number of shuffle partitions"],
+   "c": 0,
+   "e": "Append mode emits only final rows, so an aggregation needs a watermark to know when a window is complete. Complete mode would run, but it keeps all state forever."},
+  {"q": "A 300 GB Delta table is filtered by `customer_id` (millions of values) in some queries and by `order_date` in others. The access pattern is expected to change. Which layout fits best?",
+   "o": ["Partition by `customer_id`", "Partition by `order_date` and run `ZORDER BY (customer_id)` nightly", "Liquid Clustering, or `CLUSTER BY AUTO` on a managed table with Predictive Optimization", "No layout, and cache the table with `df.cache()`"],
+   "c": 2,
+   "e": "The table is far below the TB scale where partitioning helps, and a high-cardinality partition key creates tiny files. Liquid Clustering handles high cardinality and lets keys change, and CLUSTER BY AUTO picks keys from the workload."},
+  {"q": "A user has `SELECT` on schema `prod.sales` but gets a permission error when querying `prod.sales.orders`. What is the most likely cause?",
+   "o": ["`SELECT` on a schema does not cover tables created after the grant", "The user is missing `USE CATALOG` on `prod` (and `USE SCHEMA` on `prod.sales`)", "A `DENY` on the table overrides the schema grant", "The table owner must also grant `MODIFY`"],
+   "c": 1,
+   "e": "Reading a table needs `USE CATALOG`, `USE SCHEMA` and `SELECT`. A grant on a schema does cover current and future tables, and Unity Catalog has no `DENY`."},
+  {"q": "A 12-task job failed in task 10 because of a bad date parameter. Tasks 1 to 9 took two hours and succeeded. What should you do?",
+   "o": ["Edit the job to hard-code the correct date, then click Run now", "Delete the run and run the whole job again with new parameters", "Turn on automatic retries for task 10", "Start a repair run with a job parameter override for the date"],
+   "c": 3,
+   "e": "A repair run re-runs only the failed and skipped tasks and their dependents, keeps the successful results, and accepts parameter overrides. Retries do not help when the input itself is wrong."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A notebook cell runs `df2 = df.filter(\"status = 'OK'\").groupBy(\"device_id\").count()`. How many Spark jobs does this cell start?",
+   "o": ["None: `filter` and `groupBy().count()` are transformations, so only the plan is built", "One, because `count()` is an action", "Two, one per transformation", "One per partition of `df`"],
+   "c": 0,
+   "e": "`GroupedData.count()` returns a new DataFrame, so it is a transformation. Only `DataFrame.count()` is an action. No job runs until an action such as `show` or `write`."},
+  {"q": "What creates a boundary between two stages of a Spark job?",
+   "o": ["Every `withColumn` call", "A shuffle, caused by a wide transformation such as `groupBy` or a non-broadcast `join`", "Every action in the notebook", "Reading more than 128 MB of input"],
+   "c": 1,
+   "e": "Narrow transformations are chained inside one stage. A shuffle needs all upstream tasks to finish writing their shuffle files, so it starts a new stage."},
+  {"q": "A stage reads a table that is split into 8 partitions, and the cluster has 32 cores. What happens?",
+   "o": ["Spark creates 32 tasks so every core is used", "The stage fails because partitions must equal cores", "8 tasks run in parallel and 24 cores stay idle in that stage", "Each partition is processed by 4 cores at once"],
+   "c": 2,
+   "e": "A stage has one task per partition, and one task runs on one core. With 8 partitions only 8 cores can work. `repartition` would add parallelism at the cost of a shuffle."},
+  {"q": "In the optimized logical plan, a filter you wrote after a `select` appears next to the table scan. Which component moved it there?",
+   "o": ["The executors, at runtime", "The Delta transaction log", "The Spark UI", "The Catalyst optimizer, which pushes predicates down before the physical plan is chosen"],
+   "c": 3,
+   "e": "Catalyst rewrites the logical plan with rules such as predicate pushdown and column pruning, so less data is read regardless of the order you wrote the operations in."},
+  {"q": "On a serverless notebook, which code fails because the session is a Spark Connect client?",
+   "o": ["`spark.table(\"orders\").explain()`", "`spark.sparkContext.parallelize([1, 2, 3])`", "`spark.sql(\"EXPLAIN SELECT 1\")`", "`spark.readStream.table(\"orders\")`"],
+   "c": 1,
+   "e": "Spark Connect exposes the DataFrame and SQL APIs only. `SparkContext`, RDDs, broadcast variables and accumulators are not available to the client."}
+]

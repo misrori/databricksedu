@@ -1,0 +1,22 @@
+[
+  {"q": "A dashboard on a medium SQL warehouse is fast for one user, but at 9:00 forty analysts open it and queries wait in a queue. Each query on its own runs quickly. What is the best change?",
+   "o": ["Increase the warehouse cluster size to Large", "Turn off Photon so more queries fit in memory", "Raise the maximum number of clusters so the warehouse scales out", "Partition the underlying tables by user"],
+   "c": 2,
+   "e": "Queueing under concurrent load is a scale-out problem. More clusters run more queries in parallel; a bigger size only speeds up a single heavy query."},
+  {"q": "You publish a dashboard with individual data permissions. A sales manager has CAN VIEW on the dashboard but sees errors in every chart. What is the most likely cause?",
+   "o": ["The manager has no SELECT privilege on the tables behind the datasets", "The manager needs CAN MANAGE on the dashboard", "The dashboard must be republished with a schedule", "The manager needs CAN USE on the SQL warehouse to view it"],
+   "c": 0,
+   "e": "With individual data permissions the queries run with each viewer's credentials, so the viewer needs USE CATALOG, USE SCHEMA and SELECT on the data. A dashboard ACL is not a data privilege."},
+  {"q": "A query must list every customer with their 2026 revenue, including customers with no 2026 orders. It uses `customers c LEFT JOIN orders o ON o.customer_id = c.customer_id WHERE o.order_date >= '2026-01-01'`, and customers without orders are missing. What fixes it?",
+   "o": ["Replace LEFT JOIN with INNER JOIN", "Add `GROUP BY ALL`", "Replace `WHERE` with `HAVING`", "Move the date condition into the `ON` clause"],
+   "c": 3,
+   "e": "For customers with no matching order, `o.order_date` is NULL, so the WHERE condition removes them and the LEFT JOIN behaves like an inner join. Filtering the right side in `ON` keeps every customer."},
+  {"q": "Users of a Genie space keep getting a wrong number when they ask for \"net revenue\", because the company subtracts returns in a specific way. What should the author do first?",
+   "o": ["Add all related tables of the warehouse to the space", "Define the measure as a SQL expression or add a vetted example SQL query, then rerun the benchmarks", "Grant users CAN USE on the warehouse", "Ask users to rate the wrong answers so Genie retrains itself"],
+   "c": 1,
+   "e": "Trusted knowledge such as SQL expressions and example SQL fixes recurring business definitions, and benchmarks measure whether accuracy improved. Feedback alone does not change the space."},
+  {"q": "A gold report joins and aggregates a large silver table that is loaded in batches twice a day. Dashboards read it hundreds of times a day, and data up to one hour old is fine. Which object fits best?",
+   "o": ["A standard view over the silver table", "A streaming table that reads the silver table", "A materialized view with a refresh schedule", "A temporary view created in each dashboard dataset"],
+   "c": 2,
+   "e": "A materialized view stores the precomputed result, so frequent reads are cheap, and a schedule keeps it fresh enough. A view recomputes on every query; a streaming table is for continuously arriving data."}
+]

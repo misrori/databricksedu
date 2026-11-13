@@ -1,0 +1,22 @@
+[
+  {"q": "In a tool-calling agent, who executes the tool when the model returns a tool call?",
+   "o": ["The model runs the function inside the serving endpoint", "The tool runs automatically inside the tokenizer", "Your application code runs it and sends the result back as a `tool` message", "Unity Catalog runs every tool call without the application"],
+   "c": 2,
+   "e": "The model only proposes a call: a tool name and JSON arguments. The application parses, validates and executes it, then calls the model again with the result appended."},
+  {"q": "An agent keeps choosing `lookup_order_details` when it should use `get_customer_orders`. Both descriptions say \"gets order information for a customer\". What is the best fix?",
+   "o": ["Rewrite the descriptions so each says when to use it, which inputs it needs, and which tool to use instead", "Raise the temperature so the model explores both tools", "Add more tools so the model has more choice", "Increase `max_tokens` for the tool-calling step"],
+   "c": 0,
+   "e": "The model picks tools from their names, descriptions and schemas. Overlapping descriptions without a distinguishing condition cause wrong choices; distinct descriptions, renaming or merging fix it."},
+  {"q": "Why is a Unity Catalog function a good choice for an agent tool on Databricks?",
+   "o": ["It runs without any compute", "It is governed: access is controlled with `EXECUTE`, its comment documents it, and managed MCP servers can expose it", "It lets the model write arbitrary SQL against all tables", "It removes the need for a tool description"],
+   "c": 1,
+   "e": "UC functions are governed, reusable objects. Privileges control who and which agent may run them, the comment serves as the description, and Databricks can expose them through a managed MCP server."},
+  {"q": "A scripted test shows an agent calling the same search tool with the same arguments again and again. Which control belongs in the agent loop?",
+   "o": ["A longer system prompt asking the model not to repeat itself", "A larger context window", "Removing the tool definitions after the first call", "A maximum number of steps plus a check for repeated calls"],
+   "c": 3,
+   "e": "Loop limits are enforced in code. A step limit caps cost and a repeated-call check stops a stuck agent early; prompt instructions alone are not a guardrail."},
+  {"q": "You log an agent with MLflow and declare the serving endpoint and UC function it calls as `resources`. What does this enable after deployment?",
+   "o": ["The agent can call any endpoint in the workspace", "The endpoint gets short-lived credentials for exactly those resources", "The tools run on the client instead of the server", "The model is fine-tuned on the tool outputs"],
+   "c": 1,
+   "e": "Declared resources drive automatic authentication passthrough: Databricks issues least-privilege credentials for the listed resources, checked against the deployer's permissions."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A query uses `withWatermark(\"event_ts\", \"10 minutes\")`. The latest event time seen so far is 14:30. What is the watermark?",
+   "o": ["14:30", "14:40", "14:20", "The current clock time minus 10 minutes"],
+   "c": 2,
+   "e": "The watermark is the maximum event time seen minus the delay: 14:30 − 10 minutes = 14:20. It is based on event time in the data, not on the wall clock."},
+  {"q": "With the watermark at 14:20, a row with `event_ts` 14:12 arrives for a 5-minute tumbling window aggregation. What happens?",
+   "o": ["It is dropped: it is older than the watermark, and its window 14:10–14:15 was already finalized and removed from state", "It is counted in window 14:10–14:15", "It reopens window 14:10–14:15 and rewrites the result", "The query fails with a late-data error"],
+   "c": 0,
+   "e": "Windows ending before the watermark are final and their state is gone. Rows older than the watermark are dropped. Only rows within the delay are guaranteed to be counted."},
+  {"q": "Why does a streaming `groupBy(window(\"event_ts\", \"1 hour\"), \"device_id\")` without a watermark eventually cause problems?",
+   "o": ["Append mode writes duplicates", "Windows are never known to be complete, so their state is kept forever and keeps growing", "Spark rejects any windowed aggregation without a watermark", "The query falls back to processing time"],
+   "c": 1,
+   "e": "Spark cannot know whether more rows for an old window will arrive, so it keeps every window in the state store. State and batch time grow until the query slows down or fails."},
+  {"q": "Which deduplication keeps bounded state when duplicates have the same `event_id` but may carry slightly different timestamps?",
+   "o": ["`dropDuplicates([\"event_id\"])` without a watermark", "`dropDuplicates([\"event_id\", \"event_ts\"])` without a watermark", "`distinct()`", "`withWatermark(\"event_ts\", \"1 hour\").dropDuplicatesWithinWatermark([\"event_id\"])`"],
+   "c": 3,
+   "e": "`dropDuplicatesWithinWatermark` matches on the key only and forgets a key once the watermark passes. Without a watermark, state is kept for every key forever."},
+  {"q": "A stream of orders is joined to a Delta table of products that is not read as a stream. How much join state does Spark keep?",
+   "o": ["All orders seen so far", "All products, copied into the state store", "None: it is a stream-static join, and each micro-batch joins with the current version of the products table", "Only orders within the watermark delay"],
+   "c": 2,
+   "e": "Stream-static joins are stateless. Stream-stream joins buffer rows of both sides and need watermarks and a time bound to clean that state up."}
+]

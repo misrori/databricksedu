@@ -1,0 +1,22 @@
+[
+  {"q": "A job has `ingest → transform → publish`. `transform` fails after `ingest` ran for two hours. You fix the bug. What is the cheapest way to finish the run?",
+   "o": ["Run the whole job again", "Repair the run: `transform` and `publish` re-run, `ingest` keeps its result", "Create a new job with only `transform` and `publish`", "Increase `max_retries` on `ingest`"],
+   "c": 1,
+   "e": "A repair run re-executes the unsuccessful tasks and their dependents within the same run. Tasks that succeeded are not run again."},
+  {"q": "A clean-up task must run after its upstream tasks finish, whether they succeeded or failed. Which Run if setting do you use?",
+   "o": ["`ALL_SUCCESS`", "`NONE_FAILED`", "`AT_LEAST_ONE_SUCCESS`", "`ALL_DONE`"],
+   "c": 3,
+   "e": "`ALL_DONE` only requires that all upstream tasks are finished, with any result. With the default `ALL_SUCCESS` the task would be Upstream failed after a failure."},
+  {"q": "Partner files land in a volume at unpredictable times, sometimes twice a day, sometimes not for a week. How should the ingestion job be triggered?",
+   "o": ["A file arrival trigger on the volume", "A schedule every 5 minutes", "A continuous trigger", "A table update trigger on the target table"],
+   "c": 0,
+   "e": "A file arrival trigger starts a run when new files appear, so there are no empty polling runs and no waiting for the next schedule slot."},
+  {"q": "Task `ingest` runs `dbutils.jobs.taskValues.set(key=\"new_rows\", value=n)`. How does an If/else condition task downstream refer to that value?",
+   "o": ["`{{job.parameters.new_rows}}`", "`${tasks.ingest.new_rows}`", "`{{tasks.ingest.values.new_rows}}`", "`dbutils.widgets.get(\"new_rows\")`"],
+   "c": 2,
+   "e": "Task values are referenced as `{{tasks.<task_key>.values.<key>}}`. Job parameters use `{{job.parameters.<name>}}`."},
+  {"q": "A task has `timeout_seconds: 3600` and `max_retries: 2`. The first attempt hangs. What happens?",
+   "o": ["The task runs until someone cancels it", "The attempt is stopped after one hour and the task is retried; each attempt has its own one-hour limit", "The whole job is stopped and no retry happens", "Only a duration warning is sent"],
+   "c": 1,
+   "e": "The timeout applies to each attempt. A timed-out attempt counts as a failure and can be retried. A duration warning threshold only notifies."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A RAG app indexes HR policies that are reloaded into a Delta table once a night. The team wants the cheapest setup that keeps the index current by the next morning. What should they configure?",
+   "o": ["A Direct Vector Access index updated by the application", "A Delta Sync index with CONTINUOUS sync", "A Delta Sync index with TRIGGERED sync, and a `sync()` call after the nightly load", "A storage-optimized endpoint with CONTINUOUS sync"],
+   "c": 2,
+   "e": "The data changes once a day and already lives in Delta, so a TRIGGERED Delta Sync index refreshed after the load is enough. CONTINUOUS sync runs all the time and costs more, and storage-optimized endpoints do not support it."},
+  {"q": "You add MLflow scorers to monitor a live support agent. Production traffic has no expected answers. Which scorer can you NOT use there?",
+   "o": ["`Correctness`", "`RetrievalGroundedness`", "`Safety`", "`RelevanceToQuery`"],
+   "c": 0,
+   "e": "`Correctness` compares the response with expected facts, so it needs ground truth. The other three judge the request, context and response only, which is why they can run on live traces."},
+  {"q": "A source folder holds scanned contracts saved as PDF images. Text extraction with `pypdf` returns almost nothing. What is the right fix?",
+   "o": ["Use `beautifulsoup4` to parse the PDFs", "Run OCR, for example with `pytesseract`, or a layout-aware parser such as `ai_parse_document()`", "Increase the chunk overlap", "Switch to an embedding model with a longer context"],
+   "c": 1,
+   "e": "Scanned pages contain images of text, not text. They need OCR or a document parser that handles images. HTML parsers and chunking settings do not help when no text was extracted."},
+  {"q": "Users ask an assistant \"When will order 48213 arrive?\". The vector index holds shipping policies only, and answers are vague. What change fixes this?",
+   "o": ["Give the agent a tool that looks up the order by its ID in a structured table", "Fine-tune the LLM on last month's orders", "Add a re-ranker on top of the policy index", "Increase `num_results` from 5 to 50"],
+   "c": 0,
+   "e": "Per-order facts are keyed data that change daily. A structured lookup (a UC function or Genie over the orders table) returns the exact value. Fine-tuning goes stale and retrieval settings cannot find facts that are not in the index."},
+  {"q": "Evaluation shows the correct policy chunk is often not among the top 50 candidates returned by Vector Search. The team plans to add a cross-encoder re-ranker. What should you tell them?",
+   "o": ["Good idea: re-ranking raises recall in the first stage", "Re-ranking only works with Direct Vector Access indexes", "Re-ranking only reorders the candidates it gets, so first fix recall: chunking, hybrid search or filters", "Re-ranking removes the need for an evaluation set"],
+   "c": 2,
+   "e": "A re-ranker improves the precision and order of the final context, but it cannot recover documents the first stage missed. Low recall is fixed in retrieval itself: better chunks, hybrid search, query rewriting or a larger k."}
+]

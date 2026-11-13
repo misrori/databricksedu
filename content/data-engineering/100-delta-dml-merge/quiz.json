@@ -1,0 +1,22 @@
+[
+  {"q": "A `MERGE` fails with an error saying that multiple source rows matched the same target row. What is the right fix?",
+   "o": ["Run the MERGE twice", "Deduplicate the source so it has one row per key, for example the latest by sequence number", "Add `WHEN NOT MATCHED BY SOURCE THEN DELETE`", "Switch the table to deletion vectors"],
+   "c": 1,
+   "e": "Delta cannot decide which source row should win, so the merge is rejected. Keep one row per key before merging, ordered by the source sequence number."},
+  {"q": "In a `MERGE` with several `WHEN MATCHED` clauses, which one is applied to a matching row?",
+   "o": ["All clauses whose condition is true", "The last clause", "The first clause whose condition is true", "A random clause"],
+   "c": 2,
+   "e": "Clauses are evaluated in order and the first one whose condition holds wins. That is why a conditional DELETE is usually placed before the unconditional UPDATE."},
+  {"q": "A daily job loads one complete day of orders and may be re-run after a failure. Which statement keeps the table correct on a re-run without a join?",
+   "o": ["`INSERT INTO orders REPLACE WHERE order_date = '2026-10-01' SELECT ...`", "`INSERT INTO orders SELECT ...`", "`UPDATE orders SET ... WHERE order_date = '2026-10-01'`", "`DELETE FROM orders` followed by `INSERT INTO`, in two jobs"],
+   "c": 0,
+   "e": "`REPLACE WHERE` atomically swaps the rows of that day for the new batch, so a re-run gives the same result. A plain append would duplicate the day."},
+  {"q": "Why does adding `AND t.order_date >= '2026-10-01'` to the `ON` clause of a MERGE often make it faster?",
+   "o": ["It turns the MERGE into an append", "It disables the second phase", "File statistics can then skip old files, so fewer target files are joined and rewritten", "It makes the source smaller"],
+   "c": 2,
+   "e": "The first phase looks for target files that may contain matches. A filter on a clustering or partition column lets Delta rule out files by their min/max values."},
+  {"q": "A merge uses a source that contains only today's changes and ends with `WHEN NOT MATCHED BY SOURCE THEN DELETE`. What happens?",
+   "o": ["Only today's deleted keys are removed", "Every target row whose key is not in today's batch is deleted", "Nothing, the clause only applies to streaming sources", "The merge fails because the clause needs a condition"],
+   "c": 1,
+   "e": "The clause matches target rows that have no source row. With a partial source that is almost the whole table. Use it only when the source is a complete snapshot."}
+]

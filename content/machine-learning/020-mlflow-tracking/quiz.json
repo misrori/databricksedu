@@ -1,0 +1,22 @@
+[
+  {"q": "You want to record the validation loss after every training epoch so the UI can draw a curve. Which call fits?",
+   "o": ["`mlflow.log_param(\"val_loss\", loss)`", "`mlflow.set_tag(\"val_loss\", loss)`", "`mlflow.log_metric(\"val_loss\", loss, step=epoch)`", "`mlflow.log_artifact(\"val_loss\")`"],
+   "c": 2,
+   "e": "Metrics can be logged many times; the `step` makes a history. Parameters are immutable within a run and tags are strings."},
+  {"q": "Which call returns the run with the highest `roc_auc` first?",
+   "o": ["`mlflow.search_runs(order_by=[\"metrics.roc_auc DESC\"])`", "`mlflow.search_runs(order_by=[\"metrics.roc_auc ASC\"])`", "`mlflow.get_run(\"roc_auc\")`", "`mlflow.last_active_run()`"],
+   "c": 0,
+   "e": "Scores sort descending, errors such as RMSE ascending. `get_run` fetches one known run and `last_active_run` is simply the most recent."},
+  {"q": "Autologging is on and you call `model.fit(X_train, y_train)`. What is **not** logged automatically?",
+   "o": ["The model's hyperparameters", "The fitted model", "Training metrics", "Metrics on your own held-out validation set"],
+   "c": 3,
+   "e": "Autologging only sees the `fit()` call. Validation metrics on your own data must be computed and logged by you."},
+  {"q": "What does the signature of a logged model describe, and why does it matter?",
+   "o": ["The author of the model; it is needed for audit logs", "The input and output schema; it is required to register the model in Unity Catalog", "The Python version only; it is used by autologging", "The hyperparameters; it replaces `log_params`"],
+   "c": 1,
+   "e": "The signature lists input columns and types and the output type. Unity Catalog requires it, and serving uses it to check requests."},
+  {"q": "A tuning job trains 20 configurations. How do you keep them grouped and still compare each one?",
+   "o": ["Log all 20 results as parameters of one run", "Create 20 experiments", "Use one parent run and a nested child run per configuration", "Overwrite one run 20 times"],
+   "c": 2,
+   "e": "Nested runs carry `mlflow.parentRunId`, so the UI groups them under the parent, while each child keeps its own parameters and metrics."}
+]

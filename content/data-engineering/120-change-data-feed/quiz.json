@@ -1,0 +1,22 @@
+[
+  {"q": "A CDF-enabled table runs `UPDATE t SET status = 'SHIPPED' WHERE order_id = 7`. Which change rows does that version emit?",
+   "o": ["One `update` row", "One `update_preimage` and one `update_postimage` row for order 7", "One `delete` and one `insert` row", "No rows, updates are not recorded"],
+   "c": 1,
+   "e": "An update produces the row as it was before and as it is after, so consumers can see both the old and the new values."},
+  {"q": "You enable CDF on a table at version 40. What does `table_changes('t', 10)` return?",
+   "o": ["All changes since version 10", "Only the changes since version 40, with a warning", "An empty result", "An error, because no change data was recorded for versions before 40"],
+   "c": 3,
+   "e": "CDF only records changes from the version that enabled it. Asking for an earlier range fails."},
+  {"q": "Why does a commit that only appends new files not need any files in `_change_data/`?",
+   "o": ["Every row in an added file is an insert, so Delta derives the change rows from the `add` action", "Appends are never part of the change feed", "The rows are copied into the transaction log instead", "Appends are recorded only in `DESCRIBE HISTORY`"],
+   "c": 0,
+   "e": "Change files are written only when the change rows cannot be derived from add and remove actions, for example for updates."},
+  {"q": "You propagate changes from silver to gold with `MERGE`. What should you do with the change rows first?",
+   "o": ["Keep only `update_preimage` rows", "Nothing, merge them as they are", "Drop `update_preimage` rows and keep the newest row per key by `_commit_version`", "Sort them by `_commit_timestamp` and insert them all"],
+   "c": 2,
+   "e": "Preimages hold old values. A key changed several times in the range must be reduced to one row, or the merge fails on multiple matches."},
+  {"q": "What is the difference between CDC and CDF?",
+   "o": ["They are two names for the same feature", "CDC is changes coming from a source system into the lakehouse; CDF is the row-level changes a Delta table itself emits", "CDF is only for streaming, CDC only for batch", "CDC requires Unity Catalog, CDF does not"],
+   "c": 1,
+   "e": "CDC is an input you apply to a table. CDF is an output of a Delta table that downstream consumers read."}
+]

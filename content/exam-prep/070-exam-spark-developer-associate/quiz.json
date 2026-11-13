@@ -1,0 +1,22 @@
+[
+  {"q": "A notebook runs `df.select(\"id\", \"country\", \"amount\").filter(\"amount > 0\").withColumn(\"vat\", F.col(\"amount\") * 0.2).groupBy(\"country\").sum(\"vat\").show()`. Where does Spark place a stage boundary?",
+   "o": ["After `select`, because it changes the schema", "After `filter`, because it removes rows", "At `groupBy`, because rows with the same key must be shuffled together", "There is none: the whole query runs in one stage"],
+   "c": 2,
+   "e": "`select`, `filter` and `withColumn` are narrow and are pipelined into one stage. `groupBy` is a wide transformation that needs a shuffle, and every shuffle starts a new stage."},
+  {"q": "A daily job writes about 2,000 tiny Parquet files. You want about 50 files and you want to avoid a full shuffle. Which call do you add before the write?",
+   "o": ["`df.coalesce(50)`", "`df.repartition(50)`", "`df.repartition(2000)`", "`df.cache()`"],
+   "c": 0,
+   "e": "`coalesce` merges existing partitions without a full shuffle and can only decrease their number, which is exactly this case. `repartition(50)` also gives 50 files but shuffles all the data."},
+  {"q": "A streaming query counts clicks per 10-minute window on `event_ts` and must write to a Delta table in append mode. The query is rejected at start. What is missing?",
+   "o": ["A `trigger(availableNow=True)`", "Complete output mode, because Delta does not support append", "A `foreachBatch` sink", "A watermark on the event-time column, such as `withWatermark(\"event_ts\", \"15 minutes\")`"],
+   "c": 3,
+   "e": "In append mode a row may be written only once it is final. For an aggregation Spark knows a window is final only when a watermark says no more late data is accepted for it."},
+  {"q": "Code that worked on a classic cluster fails on serverless compute at the line `counter = spark.sparkContext.accumulator(0)`. What is the reason?",
+   "o": ["Accumulators must be created inside a UDF", "Serverless compute uses Spark Connect, and its clients have no access to `SparkContext`, RDDs or accumulators", "Accumulators only work in Scala", "The cluster needs `spark.sql.adaptive.enabled` set to false"],
+   "c": 1,
+   "e": "Spark Connect is a thin client that sends DataFrame and SQL plans to a remote driver. Low-level APIs that live in the driver JVM, such as `SparkContext`, are not exposed. Use DataFrame aggregations instead."},
+  {"q": "`a` has columns `(id, name, city)` and `b` has the same columns in the order `(id, city, name)`. After `a.union(b)`, some rows show city names in the `name` column. What is the fix?",
+   "o": ["Use `a.union(b).distinct()`", "Use `a.join(b, \"id\", \"full\")`", "Use `a.unionByName(b)`", "Cast both DataFrames to the same schema with `printSchema()`"],
+   "c": 2,
+   "e": "`union` matches columns by position, not by name. `unionByName` matches them by name, and with `allowMissingColumns=True` it also fills columns that exist on one side only."}
+]

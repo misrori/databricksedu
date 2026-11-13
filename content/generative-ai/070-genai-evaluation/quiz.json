@@ -1,0 +1,22 @@
+[
+  {"q": "Every question in your evaluation set has exactly one relevant document. What is the highest possible precision@5?",
+   "o": ["1.0", "0.5", "0.2", "It depends on the embedding model"],
+   "c": 2,
+   "e": "Precision@5 is relevant results divided by 5. With one relevant document, the best case is 1/5 = 0.2, so recall@k and MRR are the more informative metrics here."},
+  {"q": "A retriever returns the relevant document at rank 4 for question A and at rank 1 for question B. What is the MRR over these two questions?",
+   "o": ["0.25", "0.625", "0.5", "1.0"],
+   "c": 1,
+   "e": "Reciprocal ranks are 1/4 and 1/1. Their mean is (0.25 + 1) / 2 = 0.625."},
+  {"q": "You want to score live production traffic, where no expected answers exist. Which MLflow scorer is NOT suitable without extra labels?",
+   "o": ["`RelevanceToQuery`", "`Safety`", "`RetrievalGroundedness`", "`Correctness`"],
+   "c": 3,
+   "e": "`Correctness` compares the answer with expected facts or an expected response, which live traffic does not have. The other three judge the request, response and retrieved context alone."},
+  {"q": "A RAG answer is wrong. The trace shows the correct article was not among the retrieved chunks. Where should you work first?",
+   "o": ["Retrieval: chunking, the index, the query or k", "The prompt's tone instructions", "Raising the temperature of the generator", "Switching to a larger chat model"],
+   "c": 0,
+   "e": "If the needed context never reached the model, generation cannot fix it. Measure and improve retrieval separately, for example with recall@k on a labelled set."},
+  {"q": "Two app versions were evaluated. Version A was scored on last month's set, version B on a new, harder set with an updated judge. What can you conclude from B's lower score?",
+   "o": ["B is worse and should be rolled back", "Nothing reliable: compare versions on the same data with the same scorers", "A is overfitted to its evaluation set", "The judge model has drifted"],
+   "c": 1,
+   "e": "A comparison is only meaningful when the dataset and the scorer configuration stay fixed, so the difference can be attributed to the app change."}
+]

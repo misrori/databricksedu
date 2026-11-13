@@ -1,0 +1,22 @@
+[
+  {"q": "A Spark ML `CrossValidator` wraps a pipeline with a param grid of 4 values for `maxDepth` and 3 values for `numTrees`, and `numFolds=5`. How many models are fitted in total, including the final model?",
+   "o": ["12", "60", "61", "35"],
+   "c": 2,
+   "e": "The grid has 4 × 3 = 12 combinations, each trained on 5 folds: 60 fits. `CrossValidator` then refits the best combination on all training data, which makes 61."},
+  {"q": "A data scientist tunes an XGBoost classifier with Hyperopt and returns `{\"loss\": auc, \"status\": STATUS_OK}` from the objective. The best parameters perform badly. What is the cause?",
+   "o": ["`fmin` minimizes the loss, so it searched for the lowest AUC", "`tpe.suggest` cannot tune tree models", "`SparkTrials` does not support XGBoost", "AUC cannot be computed inside an objective function"],
+   "c": 0,
+   "e": "`fmin` always minimizes `loss`. To maximize a score such as AUC, return its negative (or 1 minus the score)."},
+  {"q": "Version 7 of `prod.ml.churn_model` beat the current champion on the same held-out data. Batch jobs load `models:/prod.ml.churn_model@champion`. What is the recommended way to promote version 7?",
+   "o": ["Transition version 7 to the Production stage", "Delete the older versions so version 7 is the latest", "Add a tag `champion=true` to version 7", "Call `set_registered_model_alias` to point `champion` at version 7"],
+   "c": 3,
+   "e": "An alias points to exactly one version, so setting it on version 7 moves it. Consumers keep the same URI. Stages do not exist in Unity Catalog, and tags only describe a version."},
+  {"q": "A random forest predicts claim cost. One feature is `postal_code` with 9,000 distinct values, another is `income`, which is right-skewed and has missing values. Which preparation fits best?",
+   "o": ["One-hot encode `postal_code` and impute `income` with the mean", "Index `postal_code` (or use a low-dimensional encoding) and impute `income` with the median", "Drop both columns because trees cannot use them", "One-hot encode `postal_code` and log-transform it"],
+   "c": 1,
+   "e": "One-hot encoding a high-cardinality feature creates thousands of sparse columns and hurts trees. For a skewed column the median is a more robust fill value than the mean."},
+  {"q": "IoT events arrive continuously and must be scored within a minute by an MLflow model. The team already runs a Lakeflow Spark Declarative Pipeline on these events. What is the recommended approach?",
+   "o": ["Call a Model Serving endpoint once per event from the pipeline", "Run a nightly batch job with `fe.score_batch`", "Load the model with `mlflow.pyfunc.spark_udf` and apply it to the streaming table inside the pipeline", "Export the events to pandas every minute and call `model.predict`"],
+   "c": 2,
+   "e": "For streaming inference, apply the model as a Spark UDF inside the pipeline. The pipeline handles checkpoints, retries and autoscaling, and there is no network hop per record."}
+]

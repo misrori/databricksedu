@@ -1,0 +1,22 @@
+[
+  {"q": "A Structured Streaming query crashes after the Delta sink committed batch 7 but before `commits/7` was written. What happens on restart?",
+   "o": ["Batch 7 is replayed from `offsets/7`, and the Delta sink skips the write because it already recorded batch 7 for this query", "Batch 7 is written twice", "The stream starts again from batch 0", "The rows of batch 7 are lost"],
+   "c": 0,
+   "e": "Offsets are written before a batch runs, commits after. The Delta sink stores the query id and batch number in its log, so a replayed batch is not written again. That is exactly-once."},
+  {"q": "Which trigger processes all data available now, possibly in several micro-batches, and then stops?",
+   "o": ["`processingTime=\"1 minute\"`", "No trigger (the default)", "`availableNow=True`", "`continuous=\"1 second\"`"],
+   "c": 2,
+   "e": "`availableNow` handles the backlog and stops, so it fits scheduled jobs and serverless compute. `once=True` is the deprecated single-batch version."},
+  {"q": "A streaming `groupBy(\"status\").count()` with no watermark is written to a Delta table. Which output mode can it use?",
+   "o": ["append", "complete", "Either append or complete", "None: streaming aggregations are not allowed"],
+   "c": 1,
+   "e": "Without a watermark an aggregate row is never final, so append mode is rejected. Complete mode rewrites the whole result each batch. Update mode would need `foreachBatch` with MERGE for a Delta table."},
+  {"q": "A stream reads from Delta table `silver_orders`. Someone runs `DELETE FROM silver_orders WHERE ...`. What happens to the stream by default?",
+   "o": ["The deleted rows are removed from the sink too", "Nothing: deletes are ignored", "The stream restarts from version 0", "The stream fails, because the source is expected to be append-only; `skipChangeCommits` would make it ignore such commits"],
+   "c": 3,
+   "e": "A Delta streaming source reads appends. Commits that rewrite existing files break that assumption. Use `skipChangeCommits` to ignore them, or the Change Data Feed to process the changes."},
+  {"q": "You point an existing streaming query at a new, empty checkpoint folder. What does it read on its next run?",
+   "o": ["Only rows added since the last run", "The whole source again from its starting position, as if it were a new query", "Nothing until new data arrives", "The query refuses to start"],
+   "c": 1,
+   "e": "All progress lives in the checkpoint. A new checkpoint is a new query, so it starts from the beginning of the source (or from `startingVersion`), usually creating duplicates in the sink."}
+]

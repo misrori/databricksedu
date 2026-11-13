@@ -1,0 +1,22 @@
+[
+  {"q": "A query filters `WHERE order_date = '2026-03-15'`, but every data file has a min/max `order_date` range covering the whole year. What happens?",
+   "o": ["Data skipping still prunes most files", "No file can be skipped, so all files are read", "The query fails until you run `ANALYZE TABLE`", "Delta reads only the first file"],
+   "c": 1,
+   "e": "A file can be skipped only if the filter value lies outside its range. Clustering narrows the ranges so more files can be skipped."},
+  {"q": "What does `OPTIMIZE` change about the rows of a table?",
+   "o": ["It removes duplicate rows", "It deletes rows older than the retention period", "Nothing: it rewrites small files into larger ones with the same rows, and commits with `dataChange: false`", "It sorts every row by primary key"],
+   "c": 2,
+   "e": "Compaction only changes the file layout. Results stay the same, and the replaced files remain for time travel until VACUUM."},
+  {"q": "A new 300 GB table is filtered mostly by `customer_id` (2 million distinct values) and `event_date`. Which layout is best?",
+   "o": ["`PARTITIONED BY (customer_id)`", "`PARTITIONED BY (event_date)` plus nightly `ZORDER BY (customer_id)`", "No layout at all; rely on optimized writes", "`CLUSTER BY (customer_id, event_date)`"],
+   "c": 3,
+   "e": "Liquid clustering handles high-cardinality keys and is incremental. Partitioning by customer creates millions of tiny files, and a table under ~1 TB should usually not be partitioned."},
+  {"q": "You run `ALTER TABLE t CLUSTER BY (order_date)` on a liquid clustered table that was clustered by `customer_id`. What happens to the existing files?",
+   "o": ["Nothing right away; new keys apply to future clustering, and `OPTIMIZE t FULL` reclusters old data", "They are all rewritten immediately", "The command fails because keys cannot be changed", "The old files are deleted"],
+   "c": 0,
+   "e": "Changing liquid clustering keys is a metadata-only commit. Existing data is reclustered only when you run `OPTIMIZE ... FULL`."},
+  {"q": "Which statement about predictive optimization is correct?",
+   "o": ["It works on every table, including external tables", "It runs `OPTIMIZE`, `VACUUM` and `ANALYZE` automatically for Unity Catalog managed tables", "It replaces the transaction log with a faster index", "It must be scheduled as a Lakeflow Job"],
+   "c": 1,
+   "e": "Predictive optimization decides when maintenance pays off and runs it for managed tables. External tables still need your own maintenance."}
+]

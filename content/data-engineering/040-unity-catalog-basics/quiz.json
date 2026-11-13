@@ -1,0 +1,22 @@
+[
+  {"q": "Your current catalog is `dev` and your current schema is `sales`. Which table does `SELECT * FROM finance.budget` read?",
+   "o": ["`sales.finance.budget`", "`dev.finance.budget`", "`finance.budget.sales`", "`main.finance.budget`"],
+   "c": 1,
+   "e": "A two-part name is `schema.object`. Only the catalog is missing, so it is filled in from the current catalog: `dev.finance.budget`."},
+  {"q": "You run `DROP TABLE` on an external table. What happens to its data files?",
+   "o": ["They are deleted at once", "They are deleted after 7 days", "They stay at their storage location; only the table definition is removed", "They are moved into managed storage"],
+   "c": 2,
+   "e": "For external tables Unity Catalog manages only the metadata. The files at the `LOCATION` are not touched, so the table can be re-created over them."},
+  {"q": "A colleague dropped a managed table by mistake yesterday. What is the quickest way to get it back with its history?",
+   "o": ["Restore it from the cloud provider's backup", "`RESTORE TABLE t TO VERSION AS OF 0`", "Re-create it with `CREATE TABLE t LOCATION ...`", "`UNDROP TABLE t`"],
+   "c": 3,
+   "e": "`UNDROP TABLE` recovers a dropped Unity Catalog table within the retention window (7 days). `RESTORE` only works on a table that still exists."},
+  {"q": "Where should a team store raw CSV files that land daily, so that access is governed by Unity Catalog?",
+   "o": ["In a volume, under `/Volumes/<catalog>/<schema>/<volume>/`", "In the driver's local disk", "In a table column of type STRING", "In the `_delta_log` folder of a table"],
+   "c": 0,
+   "e": "Volumes are Unity Catalog objects for non-tabular files. They are granted with `READ VOLUME` / `WRITE VOLUME` and addressed by a `/Volumes/...` path."},
+  {"q": "What is an external location in Unity Catalog?",
+   "o": ["A table stored in another workspace", "A cloud storage path combined with the storage credential that may access it", "A catalog shared with another company", "The folder where managed tables are stored by default"],
+   "c": 1,
+   "e": "An external location pairs a path with a storage credential. External tables and external volumes must live inside one, and privileges on it control who may create them."}
+]

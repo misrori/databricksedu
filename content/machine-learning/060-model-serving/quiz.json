@@ -1,0 +1,22 @@
+[
+  {"q": "Churn scores for all 5 million subscribers are needed every morning for the retention team. Which pattern fits?",
+   "o": ["A real-time Model Serving endpoint called once per subscriber", "A scheduled batch job that scores the table with `mlflow.pyfunc.spark_udf`", "A streaming query that calls the endpoint per event", "Running the notebook by hand each morning"],
+   "c": 1,
+   "e": "Nobody waits for a single answer, so batch is the cheapest and simplest option. The Spark UDF loads the model once per executor and scores in parallel."},
+  {"q": "What happens when you create a Model Serving endpoint for a model version?",
+   "o": ["The model is copied into a SQL warehouse", "The model is converted to SQL", "A container is built from the model's logged environment, then the endpoint becomes ready", "The endpoint downloads the training data"],
+   "c": 2,
+   "e": "The endpoint packages the model with the dependencies it was logged with. A failing dependency shows up in the build logs."},
+  {"q": "You want 10 % of live traffic to go to version 4 while version 3 keeps the rest. How?",
+   "o": ["Two served entities on one endpoint with `traffic_config` routes of 90 and 10", "Two endpoints, and the client picks one at random", "Register version 4 with the alias `@10percent`", "Set `scale_to_zero_enabled` on version 3"],
+   "c": 0,
+   "e": "One endpoint can serve several versions, and the routes, which must add up to 100, split traffic. The client keeps calling the same URL."},
+  {"q": "What do inference tables record?",
+   "o": ["Only the model's training metrics", "The model's source code", "The endpoint's billing data", "Requests and responses of the endpoint, written to a Delta table in Unity Catalog"],
+   "c": 3,
+   "e": "They capture production payloads and which served entity answered. Joined with true labels later, they are the input for monitoring."},
+  {"q": "Why might you avoid scale to zero for a production endpoint?",
+   "o": ["It is not supported in Unity Catalog", "The first request after an idle period waits for a cold start", "It disables inference tables", "It doubles the cost"],
+   "c": 1,
+   "e": "Scale to zero saves money while idle but adds start-up latency to the next request, which latency-critical apps cannot accept."}
+]

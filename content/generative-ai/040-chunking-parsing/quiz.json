@@ -1,0 +1,22 @@
+[
+  {"q": "Your embedding model accepts at most 512 tokens. Some chunks are 900 tokens long. What happens to them?",
+   "o": ["The model splits them into two vectors automatically", "The text after the limit is truncated, so that part never influences the vector", "The index rejects the table", "Nothing: longer chunks always give better vectors"],
+   "c": 1,
+   "e": "Inputs beyond the maximum length are cut off. Keep every chunk below the embedding model's limit, measured in tokens."},
+  {"q": "A vector index has grown too large for its endpoint. Which change reduces the number of chunks?",
+   "o": ["Increase the overlap from 10% to 30%", "Switch from triggered to continuous sync", "Use larger chunks or less overlap", "Add more metadata columns"],
+   "c": 2,
+   "e": "Overlap repeats text, so more overlap means more chunks. Larger chunks and less overlap mean fewer vectors."},
+  {"q": "You must index scanned paper contracts stored as PDF images. Which step is essential?",
+   "o": ["OCR, because the files contain images of text and no text layer", "`beautifulsoup4` to parse the PDF", "Fixed-size chunking with no overlap", "Enabling Change Data Feed on the volume"],
+   "c": 0,
+   "e": "A scanned PDF holds pictures of pages. A plain text extractor finds nothing; an OCR tool or a layout-aware parser such as `ai_parse_document` is needed."},
+  {"q": "Why prepend the document title to a chunk before embedding it (a context-enriched chunk)?",
+   "o": ["It makes the chunk shorter", "It is required by Delta Sync indexes", "It removes the need for a primary key", "A chunk such as \"If the router password changed...\" does not name its product; the title adds that context to the vector"],
+   "c": 3,
+   "e": "Chunks cut from the middle of a document lose the context of the whole. Adding the title or section helps the vector, and the retriever, know what the chunk is about."},
+  {"q": "What is the best way to choose between fixed-size and sentence chunking for your documents?",
+   "o": ["Always use the smallest possible chunks", "Build both, run the same retrieval evaluation set, and compare metrics such as top-k accuracy", "Pick whichever produces the most chunks", "Use the default of your library; chunking does not affect answers"],
+   "c": 1,
+   "e": "Chunk size, overlap and strategy behave like hyperparameters. Measure them with labelled questions and the documents that should be retrieved."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A 2 TB fact table is joined to a 3 MB dimension table on an equality key. With default settings, which strategy does Spark plan?",
+   "o": ["Sort-merge join, because the fact table is large", "Broadcast hash join: the 3 MB table is sent to every executor and the fact table is not shuffled", "Shuffle hash join, because one side is small", "Broadcast nested loop join"],
+   "c": 1,
+   "e": "The dimension is under `spark.sql.autoBroadcastJoinThreshold` (10 MB by default), so Spark broadcasts it. The large side is joined in place, with no shuffle."},
+  {"q": "Why is a shuffle expensive?",
+   "o": ["It recompiles the query plan for every row", "It runs on the driver only", "It rewrites the Delta transaction log", "Rows are serialized, written to local disk, sent over the network and read back, and the next stage waits for all map tasks"],
+   "c": 3,
+   "e": "A shuffle combines disk I/O, network transfer and serialization, and it is a barrier between stages. That is why reducing shuffled bytes is the main lever for join and aggregation performance."},
+  {"q": "A sort-merge join has one task that runs 40 minutes while the others finish in 1 minute. Which AQE feature targets this?",
+   "o": ["Skew join handling: it splits the oversized partition into several tasks and copies the matching partition of the other side to each", "Coalescing shuffle partitions", "Dynamic partition pruning", "Column pruning"],
+   "c": 0,
+   "e": "A partition larger than 5 times the median and above 256 MB (open-source defaults) is treated as skewed. AQE splits it so the work is spread over several tasks."},
+  {"q": "In `EXPLAIN`, a join node reads `BroadcastHashJoin [id], [id], LeftOuter, BuildRight`. What does `BuildRight` mean?",
+   "o": ["The right table is shuffled by `id`", "The left table is broadcast", "The right side is collected into an in-memory hash table and broadcast to the executors", "The join result is written to the right table"],
+   "c": 2,
+   "e": "The build side is the one turned into a hash table. In a left outer join only the right side can be the build side, because the left side must keep its unmatched rows."},
+  {"q": "You must reduce 400 partitions to 8 before writing a small result. Which call avoids a full shuffle?",
+   "o": ["`df.repartition(8)`", "`df.coalesce(8)`", "`df.repartition(\"id\")`", "`df.hint(\"merge\")`"],
+   "c": 1,
+   "e": "`coalesce` merges existing partitions without a full shuffle and can only decrease their number. `repartition` always shuffles, which gives even partitions but costs more."}
+]

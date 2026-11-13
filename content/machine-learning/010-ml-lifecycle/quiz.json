@@ -1,0 +1,22 @@
+[
+  {"q": "About 27 % of subscribers churn. A model predicts that nobody churns. What are its accuracy and recall?",
+   "o": ["Accuracy about 0.27, recall 1.0", "Accuracy about 0.73, recall 0.0", "Accuracy about 0.50, recall 0.50", "Accuracy 1.0, recall 0.0"],
+   "c": 1,
+   "e": "It is right on every stayer (73 % of rows) and catches no churner. This is why accuracy alone misleads on imbalanced labels."},
+  {"q": "Which of these is data leakage?",
+   "o": ["Using a stratified split", "Fitting a `StandardScaler` inside a pipeline on the training rows", "Computing a feature from usage in the month after the churn date", "Keeping a test set that is used only once"],
+   "c": 2,
+   "e": "The model would see information that does not exist at prediction time. Validation metrics look great, production results do not."},
+  {"q": "What is the validation set for?",
+   "o": ["Comparing models and choosing settings, while the test set is kept for one final estimate", "Training the final model", "Reporting the final number to the business", "Replacing the test set when it is too small"],
+   "c": 0,
+   "e": "Choices are made on validation rows. The test set stays untouched until the end, so its metric is still an honest estimate."},
+  {"q": "Which Databricks component reruns the training code every week or when a drift alert fires?",
+   "o": ["Models in Unity Catalog", "Model Serving", "MLflow tracking", "Lakeflow Jobs"],
+   "c": 3,
+   "e": "Jobs orchestrate the loop: schedules, triggers and task dependencies. The registry, tracking and serving are the steps a job calls."},
+  {"q": "What does Databricks Runtime for ML add compared with a standard runtime?",
+   "o": ["It is required to use MLflow", "Preinstalled, tested ML libraries and GPU variants", "It makes any Python code run faster", "It is the only way to register models in Unity Catalog"],
+   "c": 1,
+   "e": "The ML runtime removes environment setup work. MLflow and Models in Unity Catalog also work on standard runtimes and serverless."}
+]

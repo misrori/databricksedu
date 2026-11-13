@@ -1,0 +1,22 @@
+[
+  {"q": "A table with deletion vectors enabled holds one 1 GB file. You delete 10 rows from it. What does the commit write?",
+   "o": ["A new 1 GB file without the 10 rows", "A small deletion vector file, and a log entry that re-adds the same data file with a pointer to it", "Nothing until the next `OPTIMIZE`", "A copy of the 10 deleted rows in `_delta_log`"],
+   "c": 1,
+   "e": "Merge-on-read: only a bitmap of row positions is written. The `add` action for the unchanged data file now carries a `deletionVector` descriptor."},
+  {"q": "With deletion vectors on, how is an `UPDATE` of 5 rows stored?",
+   "o": ["The 5 rows are edited inside the Parquet file", "The whole file is rewritten with the new values", "The 5 old rows are marked in a deletion vector and the new versions go into a small new file", "The new values are stored in the deletion vector"],
+   "c": 2,
+   "e": "An update is a delete plus an insert. The old positions are marked, and only the changed rows are written again."},
+  {"q": "A customer asks to be deleted. The table uses deletion vectors and the default retention. Which sequence removes the data from storage?",
+   "o": ["`DELETE`, then `REORG TABLE t APPLY (PURGE)`, then `VACUUM` once the retention period has passed", "`DELETE` alone", "`DELETE`, then `VACUUM`", "`OPTIMIZE`, then `DELETE`"],
+   "c": 0,
+   "e": "`DELETE` only marks rows. The purge rewrites the files without them, and `VACUUM` deletes the old files once no version within retention needs them."},
+  {"q": "In the `deletionVector` descriptor of an `add` action, what does `cardinality` hold?",
+   "o": ["The number of rows in the data file", "The size of the `.bin` file in bytes", "The number of rows marked as deleted", "The number of data files that share the `.bin` file"],
+   "c": 2,
+   "e": "`cardinality` is the count of marked rows. The visible row count of the file is its `numRecords` minus the cardinality."},
+  {"q": "After you enable `delta.enableDeletionVectors`, an external reader that does not know the feature fails on the table. Why?",
+   "o": ["The data files are no longer Parquet", "The table protocol now lists the `deletionVectors` table feature (reader version 3), which the client does not support", "The transaction log moved to a new folder", "Deletion vectors encrypt the files"],
+   "c": 1,
+   "e": "A reader that ignored the vectors would return deleted rows, so the protocol forces readers to support the feature. Check client compatibility before enabling it."}
+]

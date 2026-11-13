@@ -1,0 +1,22 @@
+[
+  {"q": "A group has `SELECT` on `prod.hr.employees` but its queries fail with a permission error. What is the most likely cause?",
+   "o": ["The table needs a column mask first", "The group lacks `USE CATALOG` on `prod` or `USE SCHEMA` on `prod.hr`", "`SELECT` must be granted on the metastore", "The group needs `MODIFY` to read"],
+   "c": 1,
+   "e": "Reading a table needs the full path: USE CATALOG, USE SCHEMA and SELECT. A table grant alone is not enough."},
+  {"q": "You grant `USE SCHEMA, SELECT ON SCHEMA prod.hr` to `hr_analysts` (they already have `USE CATALOG`). Next week a new table `prod.hr.contracts` is created. Can they read it?",
+   "o": ["No, each new table needs its own grant", "Only after the table owner runs `REFRESH`", "Only if it is a view", "Yes, schema grants apply to current and future objects"],
+   "c": 3,
+   "e": "Privileges granted on a container are inherited by every object inside it, including objects created later."},
+  {"q": "`SELECT` was granted on schema `prod.hr` to `analysts`. You want them to stop reading only `prod.hr.salaries`. What works in Unity Catalog?",
+   "o": ["Revoke the schema grant and grant the tables they may read, or move `salaries` to another schema", "`DENY SELECT ON TABLE prod.hr.salaries TO analysts`", "`REVOKE SELECT ON TABLE prod.hr.salaries FROM analysts`", "Remove `USE CATALOG` from the table"],
+   "c": 0,
+   "e": "Unity Catalog privileges are allow-only and additive. There is no DENY, and a table-level REVOKE cannot cancel a privilege inherited from the schema."},
+  {"q": "Which privilege lets a user find a table in Catalog Explorer and see its metadata, without reading any rows?",
+   "o": ["`USE SCHEMA`", "`SELECT`", "`BROWSE`", "`EXECUTE`"],
+   "c": 2,
+   "e": "BROWSE exposes metadata for discovery and access requests. SELECT is needed to read data."},
+  {"q": "Why should production tables be owned by a group or service principal rather than a person?",
+   "o": ["Persons cannot own tables in Unity Catalog", "So control of the object does not depend on one person staying in the company or team", "Group ownership makes queries faster", "Only groups can grant privileges"],
+   "c": 1,
+   "e": "The owner has full control and can grant. If that is one person, access management breaks when they leave or change role."}
+]

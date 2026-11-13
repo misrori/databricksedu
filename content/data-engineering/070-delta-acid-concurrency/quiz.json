@@ -1,0 +1,22 @@
+[
+  {"q": "A job writes 20 Parquet files into a Delta table folder and crashes before it writes its commit file. What do readers see?",
+   "o": ["The rows of all 20 files", "Only the rows of the files that were fully written", "Nothing new: the files are not listed in the log, so the table is unchanged", "An error until someone deletes the files"],
+   "c": 2,
+   "e": "A write becomes visible only when its log file is created. Uncommitted files are orphans that readers ignore and VACUUM later removes."},
+  {"q": "Two Lakeflow Jobs run `INSERT INTO sales SELECT ...` at the same moment. What happens?",
+   "o": ["One of them fails with `ConcurrentAppendException`", "Both succeed: blind appends do not conflict", "The second waits for a table lock", "The rows are interleaved into the same files"],
+   "c": 1,
+   "e": "Blind appends do not read the table, so there is nothing to invalidate. The loser of the race for version N+1 simply commits as N+2."},
+  {"q": "Under the default isolation level, an `UPDATE` reads version 8 while an `INSERT` commits version 9 with rows that match the update's filter. What is the result?",
+   "o": ["The `UPDATE` fails with a conflict", "The `UPDATE` also changes the inserted rows", "The `INSERT` is rolled back", "The `UPDATE` commits as version 10 and the inserted rows are left unchanged"],
+   "c": 3,
+   "e": "WriteSerializable only requires the writes to be serializable. The result is as if the INSERT ran after the UPDATE. Under Serializable the same case would be a conflict."},
+  {"q": "A dashboard query starts reading version 40. During the query, a `DELETE` commits version 41. What does the query return?",
+   "o": ["The data of version 40, unchanged", "A mix of version 40 and 41", "An error because a file was removed", "The data of version 41"],
+   "c": 0,
+   "e": "Readers use snapshot isolation. The query reads the file list of version 40, and removed files stay on disk until VACUUM, so the result is consistent."},
+  {"q": "Two nightly `MERGE` jobs on one table keep failing with `ConcurrentAppendException`. Each job only handles its own region. What is the best fix?",
+   "o": ["Run `VACUUM` before each job", "Switch the table to `Serializable`", "Add the region (the partition or clustering column) to each MERGE condition so the jobs read disjoint files", "Disable the transaction log"],
+   "c": 2,
+   "e": "Conflicts are checked against what each operation read. An explicit filter on the partition or clustering column narrows that set, so the jobs no longer overlap. Serializable would make conflicts more likely, not less."}
+]

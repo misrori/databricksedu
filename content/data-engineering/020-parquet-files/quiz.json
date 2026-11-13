@@ -1,0 +1,22 @@
+[
+  {"q": "A query reads 3 columns of a 60-column table. Why is this much cheaper with Parquet than with CSV?",
+   "o": ["Parquet files are always cached in memory", "Parquet stores each column's values together, so the reader fetches only the 3 column chunks it needs", "Parquet files have no header row", "Parquet sorts every column alphabetically"],
+   "c": 1,
+   "e": "In a columnar layout the values of one column are contiguous within a row group. The reader uses offsets from the footer to fetch only the needed column chunks (column pruning)."},
+  {"q": "Where in a Parquet file are the schema and the min/max statistics stored?",
+   "o": ["In a separate `.json` file next to it", "In the first data page", "In the file name", "In the footer at the end of the file"],
+   "c": 3,
+   "e": "The footer holds the schema, the row group layout with byte offsets, and statistics per column chunk. It is written last, and readers open the file from the end."},
+  {"q": "A row group has `min(order_date) = 2026-01-01` and `max(order_date) = 2026-01-31`. The query filters `order_date = '2026-02-14'`. What does the reader do?",
+   "o": ["Skips the row group without reading its data", "Reads the row group and filters every row", "Fails because the date is out of range", "Reads only the first page of the row group"],
+   "c": 0,
+   "e": "This is predicate pushdown: the value cannot be between the min and the max, so no row in that group can match and the group is skipped."},
+  {"q": "Why does Delta Lake write a new file when you update one row instead of changing the existing Parquet file?",
+   "o": ["Because Delta stores every row in its own file", "Because UPDATE is not supported on Parquet columns of type STRING", "Because Parquet files are immutable: the footer stores offsets and object storage cannot edit files in place", "Because the old file is needed for the checkpoint"],
+   "c": 2,
+   "e": "A Parquet file is written once. Delta writes new files (or a deletion vector) and records in the transaction log which files belong to the current version."},
+  {"q": "Which column benefits most from dictionary encoding?",
+   "o": ["`order_id`, unique per row", "`status`, with 4 distinct values", "`discount`, a random double", "`email`, unique per customer"],
+   "c": 1,
+   "e": "Dictionary encoding stores each distinct value once and replaces the values with small integer codes. It pays off for low-cardinality columns."}
+]

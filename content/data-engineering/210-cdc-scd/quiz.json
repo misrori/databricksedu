@@ -1,0 +1,22 @@
+[
+  {"q": "A change feed delivers sequence 76 (city Vienna) and then sequence 75 (city Berlin) for the same customer. With `SEQUENCE BY sequence_num` and `STORED AS SCD TYPE 1`, what does the target hold afterwards?",
+   "o": ["Vienna, because sequence 75 is older than the change already applied", "Berlin, because it arrived last", "Two rows, one per city", "The update fails because the events are out of order"],
+   "c": 0,
+   "e": "AUTO CDC keeps the change with the highest sequence value per key. A late event with a lower sequence is ignored in Type 1."},
+  {"q": "In an SCD Type 2 table built by AUTO CDC, how do you select the current version of every customer?",
+   "o": ["`WHERE __START_AT IS NULL`", "`WHERE operation <> 'DELETE'`", "`WHERE __END_AT IS NULL`", "`QUALIFY row_number() OVER (ORDER BY __START_AT) = 1`"],
+   "c": 2,
+   "e": "Each change closes the previous version by setting `__END_AT`. The open version, with `__END_AT` NULL, is the current one. Deleted keys have no open version."},
+  {"q": "Your `MERGE INTO customers USING changes` fails with an error that several source rows match the same target row. What is the fix?",
+   "o": ["Add `WHEN NOT MATCHED BY SOURCE THEN DELETE`", "Run `OPTIMIZE` on the target first", "Switch the target to SCD Type 2", "Reduce the source to the latest event per key by sequence before merging"],
+   "c": 3,
+   "e": "MERGE needs at most one source row per target row. Keep only the latest change per key, for example with `QUALIFY row_number() OVER (PARTITION BY key ORDER BY seq DESC) = 1`."},
+  {"q": "A source system cannot produce a change feed. It exports the full product table every night. Which AUTO CDC variant fits?",
+   "o": ["`AUTO CDC INTO` with `SEQUENCE BY` on the export date", "AUTO CDC from snapshot, which compares consecutive snapshots to infer inserts, updates and deletes", "A materialized view over the latest export", "`APPLY AS TRUNCATE WHEN` on every load"],
+   "c": 1,
+   "e": "`create_auto_cdc_from_snapshot_flow` compares each snapshot with the previous one. Keys missing from the new snapshot become deletes."},
+  {"q": "An SCD Type 2 dimension creates a new version every time `last_login` changes, and it grows far too fast. Only `city` and `tier` changes matter for history. What do you change?",
+   "o": ["Switch to SCD Type 1", "Remove `SEQUENCE BY`", "Set `track_history_column_list` to `city` and `tier`", "Add `last_login` to `KEYS`"],
+   "c": 2,
+   "e": "With `track_history_column_list` (SQL: `TRACK HISTORY ON`), only changes to the listed columns open a new version. Other columns are updated in place on the current row."}
+]

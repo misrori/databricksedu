@@ -1,0 +1,22 @@
+[
+  {"q": "A grid has 4 values of `max_depth` and 3 values of `min_samples_leaf`, evaluated with 5-fold cross-validation and no refit. How many models are trained?",
+   "o": ["12", "35", "60", "7"],
+   "c": 2,
+   "e": "Combinations are the product, 4 × 3 = 12, and each is trained once per fold: 12 × 5 = 60."},
+  {"q": "Why is the test set not used to choose between hyperparameter settings?",
+   "o": ["It is too small to train on", "Choosing by it makes its score optimistic, so no unbiased estimate is left", "scikit-learn does not allow it", "It would make cross-validation slower"],
+   "c": 1,
+   "e": "Any data used to make a choice stops being an honest judge. Choices are made on validation folds, and the test set is scored once at the end."},
+  {"q": "You run an Optuna TPE study with 40 trials and `n_jobs=40`. What is the main drawback?",
+   "o": ["Trials cannot be logged to MLflow", "Optuna fails when `n_jobs` exceeds 8", "Each trial uses all folds at once", "Every trial is proposed before any result is known, so the search behaves like random search"],
+   "c": 3,
+   "e": "Bayesian methods learn from completed trials. With full parallelism there is nothing to learn from when trials are proposed."},
+  {"q": "What is the recommended way to log a tuning job in MLflow?",
+   "o": ["One parent run for the search and one nested child run per trial", "One experiment per trial", "Only the best trial, as a parameter of a new run", "All trials as tags of one run"],
+   "c": 0,
+   "e": "Nested runs group the trials under the search, keep each trial's settings and score comparable, and link the final model to its search."},
+  {"q": "Which statement about Hyperopt on Databricks matches current guidance?",
+   "o": ["It is the only supported tuning library", "It is required for Spark MLlib tuning", "It is no longer maintained and Databricks recommends Optuna or Ray Tune for new work", "It replaced Optuna in recent runtimes"],
+   "c": 2,
+   "e": "Open-source Hyperopt is no longer maintained and is not included in Databricks Runtime ML after 16.4 LTS. Optuna is the recommended single-node choice."}
+]

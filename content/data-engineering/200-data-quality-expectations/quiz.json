@@ -1,0 +1,22 @@
+[
+  {"q": "A pipeline table has `CONSTRAINT valid_temp EXPECT (temperature BETWEEN -50 AND 60)` with no `ON VIOLATION` clause. What happens to a row with `temperature = 999`?",
+   "o": ["It is dropped", "It is written to the table and counted as a violation", "The update fails", "It is moved to a quarantine table automatically"],
+   "c": 1,
+   "e": "Without an `ON VIOLATION` clause an expectation only warns: the row is kept and the violation is recorded in the metrics."},
+  {"q": "One row in an update violates an expectation declared with `ON VIOLATION FAIL UPDATE`. What is written to the target table in that update?",
+   "o": ["Every row except the bad one", "Only the rows processed before the bad one", "Nothing: the update fails for that table", "All rows, with a flag column on the bad one"],
+   "c": 2,
+   "e": "`FAIL UPDATE` stops the update and nothing is committed for that flow. Someone has to fix the data or the rule and run it again."},
+  {"q": "The business wants bad readings removed from silver but kept somewhere for review. Which design fits?",
+   "o": ["`expect_or_fail` on the silver table", "A warn expectation on silver", "A `CHECK` constraint on silver", "`expect_or_drop` on silver plus a second table that selects rows matching `NOT (rule)`"],
+   "c": 3,
+   "e": "That is the quarantine pattern: the clean table drops the bad rows, and a second table with the inverse rule keeps them for inspection."},
+  {"q": "A Delta table has `CHECK (amount > 0)`. A job inserts 1,000 rows and 3 of them have `amount = 0`. What is the result?",
+   "o": ["The whole INSERT fails and no rows are committed", "997 rows are committed and 3 are dropped", "All 1,000 rows are committed and a warning is logged", "The 3 rows are written with `amount` set to NULL"],
+   "c": 0,
+   "e": "Delta constraints are checked on every write. A violation fails the whole transaction; there is no row-level drop."},
+  {"q": "Why should a quarantine rule be written as `temperature IS NOT NULL AND temperature BETWEEN -50 AND 60` instead of only the `BETWEEN` part?",
+   "o": ["`BETWEEN` does not work on DOUBLE columns", "For a NULL temperature both the rule and `NOT (rule)` are NULL, so the row would land in neither table", "Expectations require an `IS NOT NULL` in every rule", "It makes the rule run faster"],
+   "c": 1,
+   "e": "SQL uses three-valued logic. `NOT (NULL)` is still NULL, so a filter keeps the row in neither the clean nor the quarantine table. An explicit NULL test makes the rule always true or false."}
+]

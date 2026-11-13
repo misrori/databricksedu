@@ -1,0 +1,22 @@
+[
+  {"q": "What does the `_delta_log` folder of a Delta table contain?",
+   "o": ["The table's rows in JSON format", "One commit file per transaction, listing which data files were added and removed", "A backup copy of every Parquet file", "Only the table's schema"],
+   "c": 1,
+   "e": "Each commit is a numbered JSON file with actions such as `add`, `remove` and `metaData`. Replaying them gives the list of files that make up a table version."},
+  {"q": "You update one row in a table that has no deletion vectors. What happens to the Parquet file that holds the row?",
+   "o": ["The row is edited inside the file", "The file is deleted from storage at once", "A new file is written with the changed data, and the log marks the old file as removed", "The file is moved into `_delta_log`"],
+   "c": 2,
+   "e": "Parquet files are immutable. Delta rewrites the affected file and records a `remove` action for the old one, which stays on disk until VACUUM."},
+  {"q": "A table directory holds 12 Parquet files, but `DESCRIBE DETAIL` reports `numFiles = 4`. Why?",
+   "o": ["`DESCRIBE DETAIL` is wrong until you run REFRESH", "Eight files belong to older versions and are no longer part of the current one", "Eight files are checkpoints", "The table is partitioned"],
+   "c": 1,
+   "e": "The folder keeps files of older versions for time travel. Only the transaction log knows which files belong to the current version."},
+  {"q": "Why does Delta write checkpoint files?",
+   "o": ["To back up the data files", "So readers do not have to replay every JSON commit from version 0", "To enforce the table schema", "To compress the Parquet files"],
+   "c": 1,
+   "e": "A checkpoint is a Parquet snapshot of the table state at one version. Readers load it and replay only the commits after it."},
+  {"q": "Which command physically deletes data files that no recent version needs?",
+   "o": ["`OPTIMIZE`", "`DELETE FROM`", "`VACUUM`", "`DROP COLUMN`"],
+   "c": 2,
+   "e": "`DELETE` and `OPTIMIZE` only log `remove` actions. `VACUUM` deletes removed files older than the retention period from storage."}
+]

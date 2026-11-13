@@ -1,0 +1,22 @@
+[
+  {"q": "A gold table shows revenue per region. Orders in the source are sometimes cancelled days later with an `UPDATE`. Which dataset type keeps the gold numbers right?",
+   "o": ["A streaming table reading `STREAM(orders)`", "A materialized view", "A temporary view", "An append flow"],
+   "c": 1,
+   "e": "A materialized view is kept equal to its query over the current sources, so later updates are reflected. A streaming table processes each source row once and never revisits it."},
+  {"q": "How does a pipeline decide that `pl_orders_silver` must be updated after `pl_orders_bronze`?",
+   "o": ["From the order of the statements in the file", "From a `depends_on` setting you write in the pipeline settings", "From the table names each query reads, which become edges in the dependency graph", "Alphabetically by table name"],
+   "c": 2,
+   "e": "The pipeline parses every definition, finds the datasets each query references, and builds the graph from them. The order in the file does not matter."},
+  {"q": "A streaming table joins each new order with `dim_product` as it arrives. A product's category is corrected in `dim_product`. What happens to orders the table already wrote?",
+   "o": ["They keep the old category until the table is fully refreshed", "They are updated at the next pipeline update", "They are deleted and re-inserted", "The pipeline fails because the dimension changed"],
+   "c": 0,
+   "e": "A stream-static join uses the dimension as it was when each row was processed. Already written rows are not revisited; only a full refresh reprocesses them."},
+  {"q": "What does a full refresh of a streaming table do?",
+   "o": ["Processes only the files that arrived since the last update", "Recomputes only the materialized views downstream", "Compacts the table's files", "Truncates the table and reprocesses all data still available in the source"],
+   "c": 3,
+   "e": "A full refresh clears the table and its checkpoint and re-reads the source from the start. Data that the source no longer holds is lost, which is why `pipelines.reset.allowed = false` exists."},
+  {"q": "Two Kafka topics must both feed the same `orders_all` streaming table, each with its own progress tracking. What do you use?",
+   "o": ["A `UNION ALL` inside a materialized view", "Two append flows targeting `orders_all`", "Two pipelines writing to the same table with `MERGE`", "A temporary view per topic and no target table"],
+   "c": 1,
+   "e": "Append flows (`@dp.append_flow(target=...)` or `CREATE FLOW ... INSERT INTO ...`) let several streaming sources write into one streaming table, each with its own checkpoint."}
+]

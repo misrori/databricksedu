@@ -1,0 +1,22 @@
+[
+  {"q": "A customer writes \"my hub is unreachable\". The right article only says \"offline\". Why can vector search find it when keyword search cannot?",
+   "o": ["Vector search ignores the query and returns the most popular article", "The embedding model maps texts with similar meaning to nearby vectors, even without shared words", "Vector search uses a synonym list that Databricks maintains", "Keyword search is limited to 10 results"],
+   "c": 1,
+   "e": "Embeddings encode meaning as position in a vector space. \"Unreachable\" and \"offline\" appear in similar contexts, so their vectors point in similar directions."},
+  {"q": "Your index was built with one embedding model. A developer queries it with vectors from a different model. What happens?",
+   "o": ["Vector Search converts the vectors automatically", "The query fails with a permission error", "Results are fine as long as both models have the same dimension", "Results are meaningless, because the two models place texts in different vector spaces"],
+   "c": 3,
+   "e": "Each model learns its own space. Even with the same dimension, the numbers are not comparable, so the same model must embed documents and queries."},
+  {"q": "Knowledge-base articles live in a Delta table and change once a night. Which index setup fits best?",
+   "o": ["Delta Sync index with `TRIGGERED` pipeline type, and `sync()` after the nightly load", "Direct Vector Access index updated by an app", "Delta Sync index with `CONTINUOUS` pipeline type", "No index: compare the query with every row in SQL"],
+   "c": 0,
+   "e": "Triggered sync updates the index only when asked, which is cheaper. Continuous sync keeps compute running for data that rarely changes."},
+  {"q": "What does a Delta Sync index need on its source table?",
+   "o": ["Liquid clustering and a partition column", "A primary key and Change Data Feed enabled", "A column named `embedding`", "A Z-order on the text column"],
+   "c": 1,
+   "e": "The primary key identifies each row in the index, and Change Data Feed lets the sync read only the rows that were inserted, updated or deleted."},
+  {"q": "Users search for exact error codes like `E-104` and vector search ranks the right article low. What helps most?",
+   "o": ["A larger `num_results`", "Continuous sync", "Hybrid search, which adds keyword matching to vector similarity", "A higher embedding dimension"],
+   "c": 2,
+   "e": "Codes and product numbers carry little semantic meaning, so embeddings handle them poorly. Hybrid search merges a keyword ranking with the vector ranking."}
+]

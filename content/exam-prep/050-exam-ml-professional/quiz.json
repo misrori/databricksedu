@@ -1,0 +1,22 @@
+[
+  {"q": "A training set joins churn labels from 2025 to a customer feature table keyed on `customer_id` and `snapshot_ts`. Validation AUC is excellent, but production AUC is much lower. What is the most likely fix?",
+   "o": ["Switch the evaluator to `areaUnderPR`", "Add `timestamp_lookup_key` to the `FeatureLookup` so each label gets the feature row as of its event time", "Retrain with more trees", "Publish the feature table to the online store"],
+   "c": 1,
+   "e": "A key-only join picks current feature values, which leak future information into training. A point-in-time lookup takes the latest feature row with `snapshot_ts <= event_ts`."},
+  {"q": "A monitor's drift table shows a p-value below 0.001 for `ks_test` on `monthly_fee`, computed on 40 million rows, while PSI is 0.03. What should the team conclude?",
+   "o": ["The shift is statistically detectable but small in size; it does not justify retraining on its own", "The column has drifted significantly and the model must be retrained now", "The KS test is invalid for numeric columns", "The monitor must be switched to a Snapshot profile"],
+   "c": 0,
+   "e": "With very large samples, p-values become tiny even for trivial shifts. PSI below 0.1 means no significant change, so check effect size before acting."},
+  {"q": "A team must tune an XGBoost model on an existing Spark cluster with minimal setup, and every trial must appear in MLflow. Which approach fits best?",
+   "o": ["Ray Tune with an ASHA scheduler on a Ray-on-Spark cluster", "A local Optuna study with `MLflowCallback` and `n_jobs=8`", "Optuna with `MlflowStorage` and `MlflowSparkStudy`", "SparkML `CrossValidator` over a parameter grid"],
+   "c": 2,
+   "e": "`MlflowSparkStudy` runs Optuna trials on Spark executors and logs each one to MLflow with almost no setup. A local study with a callback is not distributed, and Ray adds a cluster you did not need."},
+  {"q": "A fraud model serves 20,000 requests per second. A new version must be rolled out with minimal risk to live traffic, while measuring its real behavior. Which strategy fits?",
+   "o": ["Big bang: switch 100% of traffic once offline tests pass", "Shadow deployment, then promote based on its business impact", "Blue-green with scale-to-zero enabled on both endpoints", "Canary: route 5% to the challenger, monitor, then increase step by step"],
+   "c": 3,
+   "e": "Canary exposes a small share of real traffic and rolls back by setting the challenger to 0%. Shadow responses are never used, so it cannot measure business impact, and scale-to-zero adds cold starts."},
+  {"q": "In a deploy-code workflow, where is the production model trained?",
+   "o": ["In the dev workspace, then the artifact is copied to prod", "In the prod environment, on prod data, by the training code promoted through staging", "In staging, then the version is moved to the Production stage", "On the serving endpoint at first request"],
+   "c": 1,
+   "e": "Deploy code promotes the training code, not the model artifact. The prod training job builds the model on prod data, registers a version and moves the `@champion` alias. Unity Catalog has no stages."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "Customers with the same features now churn more often than before, because a competitor launched a cheaper offer. What kind of change is this?",
+   "o": ["Data drift", "Training-serving skew", "Concept drift", "Label leakage"],
+   "c": 2,
+   "e": "The relationship between inputs and outcome, P(y | X), has changed. It needs labels to detect and calls for retraining."},
+  {"q": "Which test fits a categorical column such as `contract`?",
+   "o": ["Chi-square test", "Kolmogorov-Smirnov test", "Wasserstein distance", "RMSE"],
+   "c": 0,
+   "e": "Chi-square compares category frequencies. KS and Wasserstein need ordered numeric values."},
+  {"q": "The PSI of `support_calls_90d` between the training baseline and this week is 0.27. How is that usually read?",
+   "o": ["No meaningful change", "The model is 27 % less accurate", "The p-value is 0.27", "A significant shift that deserves investigation"],
+   "c": 3,
+   "e": "A common rule of thumb: below 0.1 small, 0.1 to 0.2 moderate, 0.2 or more significant. PSI measures the size of the shift, not accuracy."},
+  {"q": "You monitor a table of model requests with features, predictions and later labels. Which profile type gives model quality metrics per window?",
+   "o": ["Snapshot", "InferenceLog, with a label column", "TimeSeries without a timestamp", "Any profile type, because labels are optional"],
+   "c": 1,
+   "e": "An InferenceLog profile knows the prediction, label and model id columns, so it computes accuracy, F1 or ROC AUC per window and model version."},
+  {"q": "A KS test on 50 million rows gives a p-value of 1e-12, but the mean moved from 3.01 to 3.02. What should you conclude?",
+   "o": ["Retrain immediately", "The data pipeline is broken", "With huge samples tiny shifts are significant; check the size of the shift before acting", "KS tests cannot be used on large data"],
+   "c": 2,
+   "e": "Significance grows with sample size. Use effect-size metrics such as PSI or Wasserstein distance and business thresholds to decide."}
+]

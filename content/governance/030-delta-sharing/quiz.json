@@ -1,0 +1,22 @@
+[
+  {"q": "When a recipient reads a shared table, how does the data reach them?",
+   "o": ["The provider's cluster runs the query and sends the result rows", "A nightly job copies the table into the recipient's storage", "The sharing server returns short-lived pre-signed URLs, and the recipient downloads the Parquet files from storage", "The recipient connects to the provider's SQL warehouse over JDBC"],
+   "c": 2,
+   "e": "The sharing server checks the grant, resolves the table version from the Delta log and signs URLs for the files. The recipient reads them directly and computes on its own side."},
+  {"q": "A partner uses pandas and Power BI and has no Databricks account. Which kind of recipient do you create?",
+   "o": ["A Databricks-to-Databricks recipient with their sharing identifier", "An open sharing recipient, authenticated with a token or OIDC", "A foreign catalog with Lakehouse Federation", "A Clean Room"],
+   "c": 1,
+   "e": "Open sharing serves any client through the open protocol. Databricks-to-Databricks needs the recipient to have a Unity Catalog metastore."},
+  {"q": "A recipient wants to read the change data feed of a shared table. What must the provider have done?",
+   "o": ["Enabled a row filter", "Granted `MODIFY` to the recipient", "Shared a view instead of the table", "Added the table to the share `WITH HISTORY`"],
+   "c": 3,
+   "e": "History sharing is what lets recipients time travel, read the change data feed and stream from a shared table."},
+  {"q": "A table has a column mask on `national_id`. What is the right way to share its data with a partner?",
+   "o": ["Share a view that leaves out or transforms the sensitive column", "Remove the mask, share the table, add the mask back", "Grant the recipient `SELECT` on the table", "Add the table to the share; the mask travels with it"],
+   "c": 0,
+   "e": "Tables with row filters or column masks cannot be shared directly. A curated or dynamic view carries the logic into the share."},
+  {"q": "What is Lakehouse Federation used for, compared with Delta Sharing?",
+   "o": ["Querying external databases such as PostgreSQL in place, as a foreign catalog", "Sharing your tables with other companies", "Copying shares into your own storage", "Encrypting shared data"],
+   "c": 0,
+   "e": "Delta Sharing gives others access to your data. Federation is the other direction: you read external systems without moving their data."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A user says: \"The chatbot remembered what I said two messages ago, so the model has memory.\" What is actually happening?",
+   "o": ["The model stores each conversation in its weights", "The application sends the earlier messages again in every request", "The serving endpoint caches the user's identity", "Temperature 0 keeps the previous state"],
+   "c": 1,
+   "e": "Models are stateless. The chat history is part of the `messages` list that the app resends on each call, and it counts against the context window."},
+  {"q": "You extract fields into JSON and want the output to be as consistent as possible. Which setting helps most?",
+   "o": ["A high `temperature` such as 1.5", "A large `max_tokens`", "A low `temperature` such as 0 or 0.1", "A `top_p` of 1.0"],
+   "c": 2,
+   "e": "Low temperature sharpens the distribution so the most likely token is almost always chosen. `max_tokens` only limits length, and `top_p` 1.0 keeps the full distribution."},
+  {"q": "Why does the product name `ThermoSense` usually cost more tokens than the word `the`?",
+   "o": ["Capital letters are always separate tokens", "Rare strings are not in the vocabulary as one piece, so they are split into several known pieces", "Product names are encrypted before tokenization", "Longer words are always exactly one token per letter"],
+   "c": 1,
+   "e": "Tokenizers keep frequent pieces as single tokens. Rare words are built from several smaller pieces, which is why names and code are token-hungry."},
+  {"q": "A team runs a steady, high-volume production workload and needs predictable latency. Which Foundation Model APIs option fits best?",
+   "o": ["Provisioned throughput", "Pay-per-token", "An external model with no rate limits", "Calling the model from a Python loop on a cluster"],
+   "c": 0,
+   "e": "Provisioned throughput reserves dedicated capacity with guaranteed throughput, billed per hour. Pay-per-token is shared and best for prototypes or variable traffic."},
+  {"q": "A model confidently states a warranty period that appears nowhere in your documents. What is the best first fix?",
+   "o": ["Raise the temperature so it explores other answers", "Increase `max_tokens`", "Fine-tune the model on the public internet", "Put the relevant warranty text in the prompt and tell the model to answer only from it"],
+   "c": 3,
+   "e": "Hallucination comes from producing plausible text without grounding. Supplying the facts in context (RAG) and allowing \"I don't know\" addresses the cause; temperature and length do not."}
+]

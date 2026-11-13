@@ -1,0 +1,22 @@
+[
+  {"q": "What turns a Delta table in Unity Catalog into a feature table?",
+   "o": ["`CREATE TABLE ... AS FEATURE STORE`", "Registering it with `FeatureStoreClient.register_table`", "Storing it in a schema called `features`", "A primary key constraint"],
+   "c": 3,
+   "e": "Any Unity Catalog Delta table with a primary key is a feature table. There is no special table type or SQL clause."},
+  {"q": "A label row has `event_ts = 2026-08-15`. With a time series feature table and `timestamp_lookup_key=\"event_ts\"`, which feature row is joined?",
+   "o": ["The newest row with a timestamp on or before 2026-08-15", "The newest row in the table", "The oldest row in the table", "The row closest to 2026-08-15, before or after"],
+   "c": 0,
+   "e": "A point-in-time lookup only considers rows that existed at the label's timestamp and takes the latest of them. Rows from later dates would leak the future."},
+  {"q": "Why log a model with `fe.log_model(..., training_set=ts)` instead of `mlflow.sklearn.log_model`?",
+   "o": ["It makes the model smaller", "It stores the feature lookups, so `score_batch` and serving can fetch features from keys", "It is the only way to log a signature", "It skips the need for a primary key"],
+   "c": 1,
+   "e": "The packaged lookup metadata lets scoring use the same features as training and adds lineage from feature table to model."},
+  {"q": "You recompute features for 200 of 5,000 subscribers. Which write keeps the other 4,800 rows unchanged?",
+   "o": ["`fe.write_table(..., mode=\"overwrite\")`", "`DROP TABLE` and recreate", "`fe.write_table(..., mode=\"merge\")`", "`INSERT INTO` without a key"],
+   "c": 2,
+   "e": "`merge` upserts on the primary key: matching keys are updated, new keys inserted, missing keys left alone."},
+  {"q": "What is the online feature store for?",
+   "o": ["Millisecond key lookups of the latest feature values for real-time serving", "Point-in-time training sets over full history", "Replacing the Delta feature table as the source of truth", "Running AutoML"],
+   "c": 0,
+   "e": "The online copy is published from the Delta table and serves the latest value per key. Training and history stay on the offline Delta table."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A table is at version 7. You run `RESTORE TABLE t TO VERSION AS OF 4`. What does `DESCRIBE HISTORY t` show afterwards?",
+   "o": ["Versions 0 to 4; versions 5 to 7 are deleted", "Versions 0 to 8, where version 8 is the RESTORE", "Only version 4", "Versions 0 to 7, and the table stays at version 7"],
+   "c": 1,
+   "e": "RESTORE is a new commit whose file list equals version 4. The later versions stay in the history and can still be queried or restored."},
+  {"q": "With default settings, why can a query `VERSION AS OF` a version from 20 days ago fail, even though the log keeps 30 days?",
+   "o": ["Time travel only works for 24 hours", "The JSON commit for that version was compacted", "`VACUUM` may have deleted data files removed more than 7 days ago, and that version needs them", "Checkpoints overwrite older versions"],
+   "c": 2,
+   "e": "Time travel needs both the log entries and the data files. VACUUM deletes removed files after `delta.deletedFileRetentionDuration` (7 days by default)."},
+  {"q": "What does `VACUUM orders DRY RUN` do?",
+   "o": ["Lists the files that VACUUM would delete, without deleting them", "Deletes files but keeps a backup", "Deletes only files older than 30 days", "Compacts small files"],
+   "c": 0,
+   "e": "A dry run is a safe preview. It is a good habit before running VACUUM manually on a table you do not know well."},
+  {"q": "A bad `UPDATE` (version 12) was followed by a correct `INSERT` (version 13). How do you undo only the update?",
+   "o": ["`RESTORE TABLE t TO VERSION AS OF 11`", "`VACUUM t RETAIN 0 HOURS`", "`DROP TABLE t` and `UNDROP TABLE t`", "`MERGE` the affected columns back from `t VERSION AS OF 11`"],
+   "c": 3,
+   "e": "RESTORE to 11 would also undo the insert. A MERGE that uses the old version as its source fixes just the changed rows and keeps later good changes."},
+  {"q": "You must keep the state of a table on 31 December for 10 years. What is the right tool?",
+   "o": ["Time travel with `TIMESTAMP AS OF '2026-12-31'`", "A deep clone of that version", "A shallow clone of that version", "Setting `delta.logRetentionDuration` to 10 years only"],
+   "c": 1,
+   "e": "A deep clone copies the data files, so it does not depend on the source's retention or VACUUM. A shallow clone still points at the source's files."}
+]

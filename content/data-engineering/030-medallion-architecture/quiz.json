@@ -1,0 +1,22 @@
+[
+  {"q": "A cleaning rule in silver was wrong for three months. What makes it possible to fix the history?",
+   "o": ["Gold tables can be recalculated from dashboards", "Bronze still holds the raw data, so silver can be rebuilt from it", "Silver keeps every version forever", "The source system always resends old data"],
+   "c": 1,
+   "e": "Bronze keeps what arrived, unchanged. After correcting the rule you reprocess bronze into silver, without going back to the source."},
+  {"q": "Which table belongs in the gold layer?",
+   "o": ["CSV rows loaded as strings with the source file name", "Orders with duplicates removed, one row per order", "Monthly revenue per region for the sales dashboard", "A checkpoint folder of a streaming job"],
+   "c": 2,
+   "e": "Gold tables are shaped for a consumer, usually aggregated or modelled. Raw rows are bronze, and cleaned rows at source grain are silver."},
+  {"q": "Why should bronze tables keep loose types and all source columns?",
+   "o": ["Strings compress better than numbers", "So a bad value or a new column does not fail the load or lose data", "Because Delta tables cannot change types later", "To make queries on bronze faster"],
+   "c": 1,
+   "e": "Bronze must capture everything reliably. Typing and validation happen in silver, where failures can be handled deliberately."},
+  {"q": "Two dashboards show different revenue because each one filters cancelled orders differently. Which practice prevents this?",
+   "o": ["Let each dashboard read bronze directly", "Define revenue once in a gold table that both dashboards use", "Add more columns to silver", "Refresh the dashboards more often"],
+   "c": 1,
+   "e": "Business definitions are applied once in gold, so every consumer gets the same number."},
+  {"q": "In a typical declarative pipeline, which dataset types match the layers?",
+   "o": ["Bronze: materialized view, silver: materialized view, gold: streaming table", "All three are temporary views", "Bronze and silver: streaming tables, gold: materialized view", "Bronze: view, silver: view, gold: streaming table"],
+   "c": 2,
+   "e": "Ingestion and row-level cleaning are incremental, which fits streaming tables. Aggregates must stay correct when inputs change, which fits materialized views."}
+]

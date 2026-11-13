@@ -1,0 +1,18 @@
+[
+  {"id": "data-engineering", "title": "Data Engineering", "icon": "🛠️",
+   "desc": "From Parquet files and the Delta transaction log to streaming pipelines, jobs and CI/CD. Small modules, one idea each."},
+  {"id": "machine-learning", "title": "Machine Learning", "icon": "🤖",
+   "desc": "The ML lifecycle on Databricks: MLflow tracking, feature tables, tuning, models in Unity Catalog, serving and monitoring."},
+  {"id": "generative-ai", "title": "Generative AI", "icon": "✨",
+   "desc": "LLM basics, prompting, embeddings and Vector Search, RAG, agents with tools, evaluation and governance."},
+  {"id": "analytics", "title": "Analytics & AI/BI", "icon": "📊",
+   "desc": "SQL warehouses, dashboards, Genie spaces and metric views: getting answers out of the lakehouse."},
+  {"id": "governance", "title": "Governance & Security", "icon": "🛡️",
+   "desc": "Unity Catalog privileges, row filters and column masks, Delta Sharing, lineage and system tables."},
+  {"id": "recaps", "title": "Course Recaps", "icon": "🎒",
+   "desc": "8-10 minute recaps of the Databricks Academy instructor-led courses, one per course day."},
+  {"id": "exam-prep", "title": "Exam Prep", "icon": "🎓", "cta": true,
+   "desc": "Preparation guides for the Databricks certifications: what the exam covers, what to know per domain, and a study plan."},
+  {"id": "demo-data", "title": "Demo Data", "icon": "🧪",
+   "desc": "Seeded data generators. Each one builds several related tables with primary and foreign keys in a schema you choose."}
+]

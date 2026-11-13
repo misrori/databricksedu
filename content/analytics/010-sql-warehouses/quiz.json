@@ -1,0 +1,22 @@
+[
+  {"q": "Every Monday at 9:00 forty analysts open the same dashboards and queries sit in the queue. Each query is fast once it starts. What should you change?",
+   "o": ["Increase the warehouse size from Small to Large", "Increase the maximum number of clusters", "Turn off Photon", "Lower the auto stop timeout"],
+   "c": 1,
+   "e": "Queueing means not enough concurrent capacity. More clusters (scale out) run more queries at the same time; a bigger size only makes each query faster."},
+  {"q": "One complex query spills to disk in the query profile and takes 20 minutes. Nobody else uses the warehouse. What is the most direct fix?",
+   "o": ["Add more clusters", "Enable the result cache", "Use a bigger warehouse size", "Switch to a classic warehouse"],
+   "c": 2,
+   "e": "A single query runs on one cluster. Spill shows the cluster has too little memory for it, so more compute per cluster (scale up) helps."},
+  {"q": "You run the same query twice on a SQL warehouse, but between the runs someone inserts rows into the table. What happens to the second run?",
+   "o": ["It is computed again, because the table changed", "It returns the cached result from the first run", "It fails until the cache is cleared", "It returns the cached result plus the new rows"],
+   "c": 0,
+   "e": "The query result cache is invalidated when the underlying tables change, so the warehouse recomputes the result."},
+  {"q": "What mainly drives the cost of a SQL warehouse?",
+   "o": ["The number of queries run", "The number of rows returned", "The number of users with CAN USE", "Its DBU rate (size and clusters) multiplied by the time it is running"],
+   "c": 3,
+   "e": "You pay DBUs for the time clusters are up, whether busy or idle. That is why auto stop and right-sizing matter most."},
+  {"q": "Why can a serverless warehouse use a much shorter auto stop than a pro warehouse without annoying users?",
+   "o": ["Serverless warehouses never stop", "Serverless starts in seconds, so a restart is barely noticed", "Pro warehouses do not support auto stop", "Serverless keeps the disk cache after stopping"],
+   "c": 1,
+   "e": "Pro and classic machines take minutes to start in your cloud account. Serverless compute is ready in seconds, so stopping early saves money with little impact."}
+]

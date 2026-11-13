@@ -1,0 +1,22 @@
+[
+  {"q": "You deploy a bundle with `databricks bundle deploy -t dev`, and the dev target uses `mode: development`. The job has a daily schedule. What happens the next morning?",
+   "o": ["The job runs on schedule under its normal name", "Nothing: in development mode the schedule is paused, and the job name has a `[dev your_name]` prefix", "The deploy fails because schedules are not allowed in dev", "The job runs as the production service principal"],
+   "c": 1,
+   "e": "Development mode prefixes resource names and pauses schedules and triggers, so each developer gets an isolated copy that does not run on its own."},
+  {"q": "The same bundle must write to `dev_retail` in dev and `prod_retail` in prod. What is the intended way to do this?",
+   "o": ["Two copies of the job YAML, one per environment", "An `if` statement in the notebook that checks the workspace URL", "A variable `catalog` with a default, overridden in `targets.prod.variables`, used as `${var.catalog}`", "A job parameter that the operator types in on every run"],
+   "c": 2,
+   "e": "Variables are resolved at deploy time per target. The definitions stay identical; only the target's variable values differ."},
+  {"q": "Someone edits the schedule of a bundle-deployed job directly in the Jobs UI. What happens at the next `databricks bundle deploy` to that target?",
+   "o": ["The UI change is overwritten with the schedule from the YAML", "The deploy fails with a conflict", "The UI change is copied back into the YAML", "The job is duplicated"],
+   "c": 0,
+   "e": "Deploys are declarative: the workspace is made to match the bundle files. Change the YAML in Git instead."},
+  {"q": "Which identity should a CI/CD system use to deploy a bundle to production?",
+   "o": ["The personal access token of the team lead", "A shared user account whose password is stored in the repository", "Any workspace admin's account", "A service principal authenticated with OAuth"],
+   "c": 3,
+   "e": "A service principal is not tied to a person and can be given exactly the rights it needs. OAuth (a client secret or workload identity federation) avoids long-lived personal tokens."},
+  {"q": "Which check belongs in the pull request stage, before anything is deployed to a shared environment?",
+   "o": ["Integration tests that run the production job on production tables", "Unit tests on pure functions with small inputs, plus `databricks bundle validate`", "`databricks bundle destroy -t prod`", "A full refresh of every pipeline"],
+   "c": 1,
+   "e": "Unit tests and validation are fast and touch no shared data. Integration tests run after the merge on a staging target with real tables."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "What is the file name of the commit for table version 42?",
+   "o": ["`_delta_log/42.json`", "`_delta_log/version-42.parquet`", "`_delta_log/00000000000000000042.json`", "`_delta_log/commit_42.crc`"],
+   "c": 2,
+   "e": "Commit files are named after the version, zero-padded to 20 digits, so they sort in version order."},
+  {"q": "A table's `protocol` action lists `deletionVectors` under `readerFeatures`. A client does not support deletion vectors. What happens?",
+   "o": ["It refuses to read the table", "It reads the table but ignores deleted rows", "It upgrades the table to remove the feature", "It reads only the files without deletion vectors"],
+   "c": 0,
+   "e": "The protocol tells clients which features they must understand. A reader that lacks a listed reader feature must not read the table, because it would return wrong results."},
+  {"q": "Where does Delta take the min and max values that it uses to skip files during query planning?",
+   "o": ["From a full scan of each file at query time", "From the `stats` field of the `add` actions in the log (or the checkpoint)", "From the `.crc` files", "From `commitInfo.operationMetrics`"],
+   "c": 1,
+   "e": "Each `add` action carries per-file statistics: row count, min, max and null count per column. The planner reads them from the snapshot without opening any data file."},
+  {"q": "The newest checkpoint is for version 30 and the latest commit is version 34. How does a reader build the snapshot of version 34?",
+   "o": ["Replay all JSON commits from version 0 to 34", "Read only `00000000000000000034.json`", "Read the `.crc` file of version 34", "Load the checkpoint at version 30, then apply commits 31 to 34 in order"],
+   "c": 3,
+   "e": "A checkpoint holds the full state at its version. The reader loads it and replays only the JSON commits after it, keeping each file whose last action is `add`."},
+  {"q": "You need time travel for 60 days. Which change is required?",
+   "o": ["Raise only `delta.logRetentionDuration` to 60 days", "Raise both `delta.logRetentionDuration` and `delta.deletedFileRetentionDuration` to 60 days", "Raise only `delta.checkpointInterval`", "Disable checkpoints"],
+   "c": 1,
+   "e": "Rebuilding an old version needs its log entries and its data files. The log retention protects the commits, the deleted-file retention protects the data files from VACUUM."}
+]

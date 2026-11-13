@@ -1,0 +1,22 @@
+[
+  {"q": "You need a sentiment label for 3 million product reviews stored in a Delta table, refreshed nightly. What is the most suitable approach?",
+   "o": ["A Python loop that sends each review to a serving endpoint with `requests`", "An agent with a sentiment tool", "`ai_analyze_sentiment(review)` in a scheduled SQL job that writes a table", "Paste the reviews into the AI Playground in batches"],
+   "c": 2,
+   "e": "A task-specific AI Function in SQL is built for batch enrichment: Databricks parallelizes the calls. Persisting the result in a table means each review is billed once."},
+  {"q": "An `ai_query` batch job over messy text fails completely because a few rows trigger model errors. Which change keeps the job running and records the failures?",
+   "o": ["Set `failOnError => false` and read `result` and `errorMessage` from the returned struct", "Raise `max_tokens` in `modelParameters`", "Wrap the query in a view", "Remove `responseFormat`"],
+   "c": 0,
+   "e": "With `failOnError => false`, `ai_query` returns a struct per row with the result or the error message, so one bad row does not fail the whole query."},
+  {"q": "Which AI Gateway feature writes the request and response payloads of a serving endpoint to a Delta table in Unity Catalog?",
+   "o": ["Rate limits", "Inference tables (payload logging)", "Traffic splitting", "`system.serving.served_entities`"],
+   "c": 1,
+   "e": "Inference tables log payloads to a UC Delta table for debugging, review and building evaluation sets. Token counts per requester come from usage tracking in `system.serving.endpoint_usage`."},
+  {"q": "A team wants to stop one heavy batch user from consuming all capacity and budget of a shared model endpoint. What should they configure?",
+   "o": ["A higher temperature for that user", "A PII guardrail on the output", "A new inference table", "AI Gateway rate limits per user or per group"],
+   "c": 3,
+   "e": "Rate limits cap queries or tokens per user, group or endpoint. Guardrails filter content, and inference tables only record what happened."},
+  {"q": "A keyword `CASE` baseline classifies tickets with 61% accuracy, and every miss is the label `other`. What is the best use of this result?",
+   "o": ["Discard it: rules are never useful once AI Functions exist", "Use it to fine-tune the model", "Use it as the score a model must beat, and send only the `other` rows to `ai_classify`", "Replace the ground truth with the rule labels"],
+   "c": 2,
+   "e": "A cheap baseline tells you what the model must improve on, and because matched rows are already correct, a cascade can call the model only for unmatched rows and save most of the cost."}
+]

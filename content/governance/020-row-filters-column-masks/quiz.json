@@ -1,0 +1,22 @@
+[
+  {"q": "What must a row filter function return?",
+   "o": ["A boolean: rows where it is TRUE are kept", "The filtered rows as a table", "The name of the group that may see the row", "A string that replaces the row"],
+   "c": 0,
+   "e": "A row filter is a SQL UDF evaluated per row. Only rows for which it returns TRUE appear in the result."},
+  {"q": "The owner of `employees` attached a row filter that keeps only `country = 'HU'` unless the user is in `hr_admins`. The owner is not in that group. What does the owner see?",
+   "o": ["All rows, because owners bypass filters", "An error, because owners cannot be filtered", "No rows at all", "Only HU rows, because the filter applies to every user including the owner"],
+   "c": 3,
+   "e": "Filters and masks apply to every query through Unity Catalog. Only the function's own logic can exempt someone."},
+  {"q": "A company has 400 tables, and new ones appear every week. Every column classified as an email must be masked for everyone outside `pii_readers`. What scales best?",
+   "o": ["`ALTER COLUMN … SET MASK` on each table, run by every pipeline", "An ABAC column mask policy on the catalog matching columns with a governed `pii` tag", "A dynamic view in front of each table", "Revoking `SELECT` on email columns"],
+   "c": 1,
+   "e": "ABAC policies attach once high in the hierarchy and apply to every current and future column with the matching governed tag."},
+  {"q": "How does the engine apply a column mask?",
+   "o": ["It stores a masked copy of the table and redirects the query", "It masks values in the dashboard after the query returns", "It rewrites the query plan so the column is replaced by a call to the mask function", "It encrypts the column in the Parquet files"],
+   "c": 2,
+   "e": "Masks and filters are injected into the plan at query time. The stored data is unchanged and the user cannot remove the rewrite."},
+  {"q": "You want to share a table that has a column mask with an external partner through Delta Sharing. What should you do?",
+   "o": ["Share the table directly; the mask is applied for the recipient", "Grant the partner `MANAGE` on the table", "Drop the mask permanently", "Share a dynamic view that applies the rules instead"],
+   "c": 3,
+   "e": "Tables with row filters or column masks cannot be added to a share directly. A dynamic view carries the logic into the share."}
+]

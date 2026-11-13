@@ -1,0 +1,22 @@
+[
+  {"q": "How does lineage get into Unity Catalog?",
+   "o": ["Engineers register it in a lineage editor", "Only Lakeflow pipelines produce lineage", "It is computed nightly by scanning cloud storage", "It is captured automatically from queries, notebooks, jobs, pipelines and dashboards that run through Unity Catalog"],
+   "c": 3,
+   "e": "Unity Catalog records the read and write links of the work it governs, at table and column level. Writes that bypass it leave no lineage."},
+  {"q": "Finance asks what yesterday cost, per product, in money. Which tables do you combine?",
+   "o": ["`system.billing.usage` and `system.billing.list_prices`, joined on SKU and the price validity period", "`system.access.audit` and `system.billing.usage`", "`system.query.history` and `system.compute.clusters`", "`system.lakeflow.jobs` alone"],
+   "c": 0,
+   "e": "Usage holds DBU quantities per SKU. List prices hold the price per SKU over time, so the join must match the SKU and the price valid at usage time."},
+  {"q": "A notebook that queries `system.access.audit` fails for most users with a permission error. What is the cause?",
+   "o": ["System tables only work on classic clusters", "System tables need an admin to enable the schema and grant `USE CATALOG`, `USE SCHEMA` and `SELECT`", "Audit data is only available through the REST API", "The notebook must be owned by a service principal"],
+   "c": 1,
+   "e": "System tables are governed like other Unity Catalog objects. Admins enable the schemas and grant access to the groups that need it."},
+  {"q": "Which question can `system.access.audit` answer?",
+   "o": ["Which rows of `employees` a user saw", "How many DBUs a job used", "Which users tried to access `employees`, and whether they were denied", "Which columns feed a dashboard"],
+   "c": 2,
+   "e": "Audit rows record actions such as getTable with the user, the object and the response status. They do not record row-level results."},
+  {"q": "You count rows in `system.lakeflow.jobs` and get far more rows than jobs. Why?",
+   "o": ["Deleted jobs are duplicated", "Each task is stored as a separate job", "The table keeps a history of changes, so one job can have several rows; take the latest `change_time`", "The table includes all workspaces' runs"],
+   "c": 2,
+   "e": "Some system tables, such as jobs and clusters, keep slowly changing history. Use the latest row per id for the current definition."}
+]
