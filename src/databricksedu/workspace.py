@@ -13,20 +13,35 @@ def _magic(text):
     return "\n".join("# MAGIC " + line if line else "# MAGIC" for line in text.splitlines())
 
 
+_CSS_JS = {}
+
+
+def _css_loader(with_viz):
+    """A script that adds the stylesheet. Databricks runs the scripts of a %md-sandbox cell, but its
+    Markdown pass can break a long <style> block (CSS is full of * and _); base64 has neither."""
+    if with_viz not in _CSS_JS:
+        css = catalog.asset("dbx.css") + (catalog.asset("viz.css") if with_viz else "")
+        b64 = base64.b64encode(css.encode("utf-8")).decode("ascii")
+        b64 = "'+\n'".join(b64[i:i + 400] for i in range(0, len(b64), 400))     # short lines
+        _CSS_JS[with_viz] = ("(function(){var b=atob('%s'),u=new Uint8Array(b.length);"
+                             "for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);"
+                             "var s=document.createElement('style');s.textContent=new TextDecoder('utf-8').decode(u);"
+                             "(document.head||document.documentElement).appendChild(s);})();\n" % b64)
+    return _CSS_JS[with_viz]
+
+
 def _sandbox(cell):
     """A %md-sandbox cell. No blank lines (they would end the HTML block) and no bare $ (KaTeX)."""
     body = cell["h"].replace("$", "&#36;")
     body = "\n".join(line if line.strip() else "<span></span>" for line in body.splitlines())
-    css = catalog.asset("dbx.css") + (catalog.asset("viz.css") if cell.get("viz") else "")
-    out = "%md-sandbox\n<style>" + css + "</style>\n<div class=\"dbx\">\n" + body + "\n</div>"
-    script = ""
+    out = "%md-sandbox\n<div class=\"dbx\">\n" + body + "\n</div>"
+    script = _css_loader(bool(cell.get("viz")))
     if cell.get("viz"):
         script += catalog.asset("viz.js") + "\nDBXViz.init(document, {autoplay: true});\n"
     if cell.get("quiz"):
         quiz = json.dumps(cell["quiz"], ensure_ascii=False).replace("$", "\\u0024").replace("</", "<\\/")
         script += catalog.asset("quiz.js") + "\ndbxQuiz('dbxquiz', " + quiz + ");\n"
-    if script:
-        out += "\n<script>\n" + script.replace("$", "\\u0024") + "</script>"
+    out += "\n<script>\n" + script.replace("$", "\\u0024") + "</script>"
     return out
 
 

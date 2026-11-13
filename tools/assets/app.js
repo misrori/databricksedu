@@ -28,7 +28,7 @@
       '<button class="hbtn" id="bOver" title="Slide overview (O)" style="display:none">▦</button>' +
       '<button class="hbtn pri" id="bSave" style="display:none">💾 Save to workspace</button>' +
       '<button class="hbtn" id="bSize" title="Window height">↕</button>' +
-      '<button class="hbtn" id="bFull" title="Full screen (F)">⛶</button>' +
+      '<button class="hbtn" id="bFull" title="Full screen (F)">⛶ Full screen</button>' +
     '</div><div id="bar"></div>' +
     '<div id="main">' +
       '<div id="home"></div>' +
@@ -344,23 +344,42 @@
     if (!S.mod) return 'cat/' + S.cat;
     return S.mode === 'doc' ? 'doc/' + S.mod.id : 'slides/' + S.mod.id + '/' + S.idx;
   }
-  // Notebook outputs (Databricks displayHTML) live in an iframe that may not allow fullscreen:
-  // then the app is reopened in its own browser tab, where F / ⛶ gives real full screen.
-  function openTab() {
-    var w = null;
-    try { w = window.open('', '_blank'); } catch (e) { }
-    if (!w) { setH(Math.max(H, (window.screen && screen.availHeight || 900) - 160)); root.scrollIntoView(); return; }
+  function pageHtml() {
     var start = '<script>window.DBE_START=' + JSON.stringify({ route: route(), page: true }) + ';<\/script>';
-    w.document.open();
-    w.document.write(SRC.replace('<script>window.DBE=', start + '<script>window.DBE='));
-    w.document.close();
+    return SRC.replace('<script>window.DBE=', start + '<script>window.DBE=');
+  }
+  function fillScreen() {
+    setH(Math.max(H, ((window.screen && screen.availHeight) || 900) - 140));
+    try { root.scrollIntoView({ block: 'start' }); } catch (e) { root.scrollIntoView(); }
+  }
+  // Notebook outputs (Databricks displayHTML) live in an iframe that does not allow full screen.
+  // Then offer real links (a click on a link is rarely blocked, unlike window.open from script).
+  function fsMenu() {
+    var url = null;
+    try { url = URL.createObjectURL(new Blob([pageHtml()], { type: 'text/html' })); } catch (e) { }
+    var h = '<div class="mbox"><h3>⛶ Full screen</h3>' +
+      '<p>The notebook does not let this window go full screen by itself. Pick one:</p>' +
+      (url ? '<a class="fsopt" href="' + url + '" target="_blank" rel="noopener" id="fsTab"><b>↗ Open in a new browser tab</b>' +
+        '<span>The whole app in its own tab, right where you are now. Press <b>F</b> there for real full screen.</span></a>' : '') +
+      '<button class="fsopt" id="fsFill"><b>⤢ Make this window as tall as the screen</b><span>Stays in the notebook. Combine it with the ' +
+        'cell\'s own full-screen icon in the Databricks cell toolbar.</span></button>' +
+      (url ? '<a class="fsopt" href="' + url + '" download="databricksedu.html" id="fsDl"><b>⬇ Download as an HTML file</b>' +
+        '<span>Open it later in any browser, also offline.</span></a>' : '') +
+      '<button class="mclose" id="mclose">Close</button></div>';
+    var modal = $('modal');
+    modal.innerHTML = h; modal.classList.add('on');
+    function close() { modal.classList.remove('on'); }
+    $('fsFill').onclick = function () { close(); fillScreen(); };
+    if (url) { $('fsTab').addEventListener('click', function () { setTimeout(close, 50); }); $('fsDl').addEventListener('click', function () { setTimeout(close, 50); }); }
+    $('mclose').onclick = close;
+    modal.onclick = function (e) { if (e.target === modal) close(); };
   }
   function toggleFs() {
     if (document.fullscreenElement || document.webkitFullscreenElement) return (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    if (!fsOk) return openTab();
+    if (!fsOk) return fsMenu();
     var req = root.requestFullscreen || root.webkitRequestFullscreen, p = null;
-    try { p = req.call(root); } catch (e) { return openTab(); }
-    if (p && p.catch) p.catch(openTab);
+    try { p = req.call(root); } catch (e) { return fsMenu(); }
+    if (p && p.catch) p.catch(fsMenu);
   }
   document.addEventListener('keydown', function (e) {
     if (/INPUT|TEXTAREA/.test((e.target.tagName || ''))) return;
