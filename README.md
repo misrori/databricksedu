@@ -20,11 +20,12 @@ Works on Databricks serverless and classic compute. No dependencies beyond what 
 | Track | Examples |
 |---|---|
 | 🛠️ Data Engineering | Lakehouse architecture, Parquet files, Medallion architecture, Anatomy of a Delta table, the transaction log, deletion vectors, MERGE, Change Data Feed, Spark joins and shuffles, Auto Loader, Structured Streaming, Declarative Pipelines, Lakeflow Jobs, Bundles and CI/CD |
+| 🔥 Apache Spark Programming | Driver, workers, shuffle and the DAG, reading and writing DataFrames, DataFrame ETL, aggregation, joins and set operations, window functions, complex types, Python UDFs, real-time mode, the Spark UI, Spark with Delta Lake, optimizing Spark code |
 | 🤖 Machine Learning | ML lifecycle, MLflow tracking, feature engineering, tuning, models in Unity Catalog, serving, monitoring |
 | ✨ Generative AI | How LLMs work, prompting, embeddings and Vector Search, chunking, RAG, agents, evaluation, AI Functions |
 | 📊 Analytics & AI/BI | SQL warehouses, AI/BI dashboards, Genie spaces, metric views |
 | 🛡️ Governance & Security | Unity Catalog privileges, row filters and column masks, Delta Sharing, lineage and system tables |
-| 🎒 Course Recaps | 8-10 minute recaps of the Databricks Academy Data Engineering and Advanced Data Engineering courses |
+| 🎒 Course Recaps | 8-10 minute recaps of the Databricks Academy Data Engineering, Advanced Data Engineering and Apache Spark Programming courses |
 | 🎓 Exam Prep | Study guides for the Databricks certifications |
 | 🧪 Demo Data | Seeded generators for six related-table datasets with primary and foreign keys |
 

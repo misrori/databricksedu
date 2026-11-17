@@ -1,0 +1,22 @@
+[
+  {"q": "`df.withColumn(\"quantity\", F.col(\"quantity\").cast(\"int\"))` runs on a DataFrame that already has a `quantity` column. What happens?",
+   "o": ["An error: the column already exists", "A second column named quantity is added", "The existing quantity column is replaced, in a new DataFrame", "The original DataFrame is changed in place"],
+   "c": 2,
+   "e": "`withColumn` with an existing name replaces that column. As always, it returns a new DataFrame and leaves the old one unchanged."},
+  {"q": "Which filter keeps the orders that are neither TEST nor CANCELLED?",
+   "o": ["`df.filter(~F.col(\"status\").isin(\"TEST\", \"CANCELLED\"))`", "`df.filter(F.col(\"status\") != \"TEST\" | \"CANCELLED\")`", "`df.filter(F.col(\"status\").isin(\"TEST\", \"CANCELLED\"))`", "`df.where(\"status\" not in [\"TEST\", \"CANCELLED\"])`"],
+   "c": 0,
+   "e": "`isin` builds the membership test and `~` negates it. The other options either keep the wrong rows or evaluate Python logic on a string instead of a column."},
+  {"q": "A `F.when(F.col(\"quantity\") >= 4, \"large\")` expression has no `otherwise`. What value do rows with quantity 2 get?",
+   "o": ["`\"large\"`", "An empty string", "`\"small\"`", "NULL"],
+   "c": 3,
+   "e": "Like SQL `CASE WHEN` without `ELSE`, rows that match no branch get NULL."},
+  {"q": "On serverless (ANSI mode on), one row has `quantity = 'five'`. What does `F.col(\"quantity\").cast(\"int\")` do when the query runs?",
+   "o": ["Returns NULL for that row and continues", "Fails the query with a cast error", "Returns 5", "Drops the row"],
+   "c": 1,
+   "e": "With ANSI mode an invalid cast is an error. Use `try_cast` to get NULL instead, and route those rows to a quarantine table."},
+  {"q": "In the silver chain, why is `F.upper(F.trim(\"status\"))` applied **before** the filter on status?",
+   "o": ["Filters only work on upper-case columns", "It makes the query faster", "So values like `' completed'` are compared in one normal form and not missed", "trim is required before every join"],
+   "c": 2,
+   "e": "Raw text has stray spaces and mixed case. Normalizing first makes the rule `isin(\"TEST\", \"CANCELLED\")` match every variant."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A stage's summary metrics show a median task duration of 4 s and a max of 3 min. The slowest task also has the largest shuffle read. What is the most likely cause?",
+   "o": ["The cluster is too small", "Data skew: one key holds far more rows than the others", "The driver is out of memory", "The table has too many columns"],
+   "c": 1,
+   "e": "Same code, much more data in one task is the signature of skew. Adding machines does not help, because that one task still runs on one core."},
+  {"q": "What does a non-zero **Spill (disk)** value on a stage tell you?",
+   "o": ["The output was written to a Delta table", "The shuffle files were deleted", "The cache was evicted", "Some tasks had more data than fit in execution memory, so they wrote it to local disk and read it back"],
+   "c": 3,
+   "e": "Spill happens when a task's sort, aggregation or join buffer does not fit in memory. It costs disk I/O and usually means partitions are too large or skewed."},
+  {"q": "You run a query in a serverless notebook and want to see time and rows per operator. Where do you look?",
+   "o": ["The query profile, through **See performance** under the cell output or the Query History page", "The Spark UI Stages tab of the serverless cluster", "The Environment tab", "The driver logs"],
+   "c": 0,
+   "e": "Serverless compute has no Spark UI for the user. The query profile shows the operator graph with time, rows, bytes and spill."},
+  {"q": "A stage runs 12,000 tasks, and most of them finish in a few milliseconds. What is the first thing to check?",
+   "o": ["Whether a Python UDF is used", "Whether the driver has enough memory", "Whether the input consists of many small files or the data has far too many partitions", "Whether AQE is switched off"],
+   "c": 2,
+   "e": "Tiny tasks mean the scheduling overhead is larger than the work. Compacting small files with OPTIMIZE or writing fewer, larger files usually fixes it."},
+  {"q": "In the SQL / DataFrame tab, a join outputs 4 million rows from inputs of 60,000 and 500 rows. What does that suggest?",
+   "o": ["The join was broadcast", "The join key is not unique on the side that should be unique, so rows are multiplied", "Partial aggregation failed", "Photon is disabled"],
+   "c": 1,
+   "e": "A join with a unique dimension key cannot output more rows than the fact side. More rows mean duplicate keys, which also make every later operator slower."}
+]

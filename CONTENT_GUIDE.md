@@ -71,7 +71,7 @@ Rules that keep slides readable:
 | ```` ```sql todo ```` / ```` ```python todo ```` | code with a "your turn" badge | a runnable starter cell |
 | ```` ```sql solution ```` / ```` ```python solution ```` | collapsed "Show the solution" | collapsed inside the text cell |
 | ```` ```viz <type> ```` | animated visualization | the same visualization |
-| ```` ```dataset <name> ```` | dataset card and setup code | the three-step data setup (see below) |
+| ```` ```dataset <name> ```` | dataset card and setup code | the one-cell data setup (see below) |
 | `**The one idea to remember:** ...` | highlighted idea card | same |
 | `> text` | callout | same |
 | `- ❌ ...` / `- ✅ ...` | red / green list items | same |
@@ -87,15 +87,17 @@ Put this once, in a section called `## 🧪 Try it: ...`, before the first runna
 ```
 ````
 
-In the notebook it expands to: (1) generate the data and register temp views, (2) two variables `CATALOG` and
-`SCHEMA` that the learner fills in, followed by `data.use(CATALOG, SCHEMA)`, (3) SQL cells that create the tables
-with primary and foreign keys. After it, your cells can rely on:
+In the notebook it expands to one cell: the learner fills in `CATALOG` and `SCHEMA`, and
+`ds = data.create("<name>", CATALOG, SCHEMA)` creates the tables with primary and foreign keys and prints a report.
+A second cell checks the row counts. After it, your cells can rely on:
 
 - `data` (the module), `ds` (the generated dataset), `CATALOG`, `SCHEMA` (strings), `spark`
 - the current catalog and schema are set, so **use unqualified table names**: `SELECT * FROM fact_orders`
 - `data.volume(CATALOG, SCHEMA)` returns a `/Volumes/...` path you may write files to (it creates the volume)
-- `ds.land_files(path, parts=3, upto=1, fmt="csv")` writes raw files for ingestion demos; call it again with a
-  larger `upto` to simulate new files arriving
+- `data.files("<name>", CATALOG, SCHEMA, volume="landing", folder="<module word>", n_files=1, fresh=True)` writes raw
+  files for ingestion and streaming demos and returns the base path (`<base>/<table>/part_0001.csv`, ...). Every
+  call writes NEW files with new rows and new ids (retail: 20,000 orders per file in `fact_orders/`); `fresh=True`
+  empties the folder first. `fmt="json"` writes JSON lines.
 
 The exercises notebook repeats the same setup automatically, so exercises must only depend on the dataset tables
 (not on objects created by the lecture cells), or create what they need themselves.

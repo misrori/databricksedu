@@ -1,0 +1,22 @@
+[
+  {"q": "You need every customer who has never placed an order, with only the customer columns. Which join fits best?",
+   "o": ["`inner`", "`left_anti`", "`left_semi`", "`full`"],
+   "c": 1,
+   "e": "A left anti join keeps left rows that have no match on the right. A left semi join is the opposite: rows that do have a match."},
+  {"q": "Two DataFrames have the same columns, but in a different order. How do you stack them safely?",
+   "o": ["`df1.union(df2)`", "`df1.join(df2, how=\"full\")`", "`df1.intersect(df2)`", "`df1.unionByName(df2)`"],
+   "c": 3,
+   "e": "union() matches columns by position, so swapped columns silently mix values. unionByName() matches by column name."},
+  {"q": "What does `rollup(\"region\", \"segment\").agg(sum(\"revenue\"))` add compared with a plain groupBy on the same columns?",
+   "o": ["Subtotal rows per region and a grand-total row, with NULL in the rolled-up columns", "One extra column per segment value", "A running total ordered by region", "Nothing: rollup is an alias for groupBy"],
+   "c": 0,
+   "e": "rollup adds hierarchical subtotals: one row per region with segment NULL, and one grand-total row with both keys NULL. pivot is what turns values into columns."},
+  {"q": "You want the latest row per order_id from a table with duplicates. Which window function is safest?",
+   "o": ["`rank()` ordered by updated_at descending, keep rank = 1", "`dense_rank()` ordered by updated_at descending, keep rank = 1", "`row_number()` ordered by updated_at descending, keep 1", "`lag()` ordered by updated_at"],
+   "c": 2,
+   "e": "row_number() gives every row a unique number, so exactly one row per key survives. rank() and dense_rank() give ties the same number, which can keep duplicates."},
+  {"q": "A transformation multiplies a price by a tax rate with a plain Python `@udf` and is slow. What is the best fix?",
+   "o": ["Add more driver memory", "Use the built-in expression `F.col(\"price\") * 1.27`", "Collect the data and loop in Python", "Repartition to a single partition first"],
+   "c": 1,
+   "e": "Built-in expressions run inside the engine (and on Photon) with no Python serialization. If no built-in exists, a pandas UDF is the next best option."}
+]

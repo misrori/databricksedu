@@ -1,0 +1,22 @@
+[
+  {"q": "You run an aggregation on `fact_orders`. Who reads the Parquet files of the table from cloud storage?",
+   "o": ["The driver, which then sends the rows to the workers", "The cluster manager", "The executors on the worker nodes, each reading its own chunk", "Your notebook's Python process"],
+   "c": 2,
+   "e": "The driver only sends small tasks. Each task runs on an executor and reads its partition directly from cloud storage, so the data never passes through the driver."},
+  {"q": "A query does `filter` → `withColumn` → `groupBy(\"region\").count()` → `show()`. How many stages does it usually have?",
+   "o": ["2: the `groupBy` shuffle cuts the DAG once", "1: everything runs in one stage", "4: one stage per transformation", "3: one for the filter, one for the groupBy, one for show"],
+   "c": 0,
+   "e": "Narrow steps (filter, withColumn, the partial count) are chained in one stage. The groupBy needs a shuffle, which is a wide dependency and starts a second stage."},
+  {"q": "Which of these creates a **narrow** dependency in the DAG, so it stays in the same stage as the step before it?",
+   "o": ["`distinct()`", "`orderBy(\"order_date\")`", "`groupBy(\"product_id\").count()`", "`filter(F.col(\"status\") == \"COMPLETED\")`"],
+   "c": 3,
+   "e": "A filter needs only the rows of its own partition. distinct, orderBy and groupBy need rows from all partitions, so they shuffle and start a new stage."},
+  {"q": "Stage 1 has finished and stage 2 is running when one worker node disappears. What does Spark do?",
+   "o": ["The whole job fails and you must restart it", "It re-runs the stage 1 tasks whose shuffle files were on that worker, then continues stage 2", "It reads a replica of the shuffle files from another worker", "The driver computes the lost partitions itself"],
+   "c": 1,
+   "e": "Shuffle files live on the local disk of the worker that wrote them. Spark keeps no copies, but the lineage (the DAG) tells the driver how to recompute exactly the lost map outputs."},
+  {"q": "A shuffle has 3 map tasks and 2 reduce partitions. Where does reduce task 0 get its input?",
+   "o": ["From the driver", "Only from map task 0", "Bucket 0 of the shuffle output of every map task", "Directly from the table files in cloud storage"],
+   "c": 2,
+   "e": "Each map task splits its output into one bucket per reduce partition. Reduce task 0 fetches bucket 0 from all map tasks, so all rows of its keys meet in one place."}
+]

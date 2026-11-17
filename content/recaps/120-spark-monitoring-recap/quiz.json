@@ -1,0 +1,22 @@
+[
+  {"q": "A job overwrote a Delta table with bad data an hour ago. What is the fastest safe way to get the previous data back?",
+   "o": ["Re-run the whole pipeline from the raw files", "`RESTORE TABLE t TO VERSION AS OF <previous version>`", "Run `VACUUM` to remove the bad files", "Run `OPTIMIZE` to rewrite the table"],
+   "c": 1,
+   "e": "Every Delta write is a version in the transaction log. RESTORE points the table back to an earlier version, as long as VACUUM has not deleted its files."},
+  {"q": "In the Spark UI, a stage has a median task time of 4 seconds and a max of 6 minutes. What is the most likely problem?",
+   "o": ["Too many executors", "Missing Photon", "Data skew: one partition holds far more data than the others", "The driver is out of memory"],
+   "c": 2,
+   "e": "A max task time far above the median is the classic sign of skew. AQE skew handling, salting, or treating hot keys separately helps."},
+  {"q": "What does Adaptive Query Execution (AQE) do at a shuffle boundary?",
+   "o": ["Re-plans with real data sizes: switch to broadcast joins, coalesce small partitions, split skewed ones", "Caches the shuffle output in the driver", "Converts Python UDFs to built-in functions", "Runs OPTIMIZE on the source tables"],
+   "c": 0,
+   "e": "AQE measures the real size of each shuffle output and adjusts the rest of the plan. It is on by default on Databricks."},
+  {"q": "Which code upserts a small `updates` DataFrame into the Delta table `orders` by `order_id`?",
+   "o": ["`updates.write.mode(\"append\").saveAsTable(\"orders\")`", "`updates.write.mode(\"overwrite\").saveAsTable(\"orders\")`", "`spark.table(\"orders\").unionByName(updates)`", "`DeltaTable.forName(spark, \"orders\").alias(\"t\").merge(updates.alias(\"s\"), \"t.order_id = s.order_id\").whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()`"],
+   "c": 3,
+   "e": "MERGE updates matching rows and inserts new ones in one atomic commit. Append would duplicate existing orders, and overwrite would delete all other rows."},
+  {"q": "You run notebooks on serverless compute and want to see where a query spends its time. Where do you look?",
+   "o": ["The Spark UI Executors tab", "The query profile, opened from the cell output", "`spark.sparkContext.statusTracker()`", "The cluster event log"],
+   "c": 1,
+   "e": "Serverless does not expose the classic Spark UI. The query profile shows the plan as a graph with time, rows and bytes per operator."}
+]

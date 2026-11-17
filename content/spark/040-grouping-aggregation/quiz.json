@@ -1,0 +1,22 @@
+[
+  {"q": "A group has 5 rows and the column `discount` is NULL in 2 of them. What do `F.count(\"*\")` and `F.count(\"discount\")` return for that group?",
+   "o": ["5 and 5", "3 and 5", "5 and 3", "3 and 3"],
+   "c": 2,
+   "e": "`count(\"*\")` counts rows. `count(column)` counts only the non-NULL values of that column, like every other aggregate that skips NULLs."},
+  {"q": "How do you write the SQL `HAVING sum(revenue) > 1000` in PySpark?",
+   "o": ["`df.filter(F.sum(\"revenue\") > 1000).groupBy(\"k\")`", "`df.groupBy(\"k\").having(F.sum(\"revenue\") > 1000)`", "`df.groupBy(\"k\", F.col(\"revenue\") > 1000).agg(F.sum(\"revenue\"))`", "`df.groupBy(\"k\").agg(F.sum(\"revenue\").alias(\"total\")).filter(F.col(\"total\") > 1000)`"],
+   "c": 3,
+   "e": "There is no `having` method. A `filter` placed after `agg` works on the aggregated column, so it removes groups instead of rows."},
+  {"q": "Why is `groupBy` followed by `agg` called a wide transformation?",
+   "o": ["Rows with the same key can sit in different partitions, so Spark must shuffle them together", "It adds many new columns to the DataFrame", "It always runs on the driver", "It reads every column of the table"],
+   "c": 0,
+   "e": "One group must end up in one task. Rows of that key are spread over many partitions, so they are moved across the network in a shuffle."},
+  {"q": "Why is `pivot(\"category\", [\"Books\", \"Home\"])` usually better than `pivot(\"category\")`?",
+   "o": ["Only the listed form returns NULL for empty combinations", "Without the list Spark runs an extra job to find the distinct values first", "Without the list pivot only works on numeric columns", "The listed form avoids the shuffle of the groupBy"],
+   "c": 1,
+   "e": "Spark needs the output columns before it can plan the query. Giving the values saves a pass over the data and fixes the column order."},
+  {"q": "`rollup(\"region\", \"segment\")` on 4 regions and 3 segments, where every combination exists. How many rows come back?",
+   "o": ["12", "16", "17", "20"],
+   "c": 2,
+   "e": "12 region-segment groups, plus 4 region subtotals, plus 1 grand total. A `cube` would also add 3 segment subtotals, for 20."}
+]

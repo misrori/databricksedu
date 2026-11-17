@@ -1,0 +1,22 @@
+[
+  {"q": "You append a DataFrame with one extra column to a Delta table, without any options. What happens?",
+   "o": ["The extra column is silently dropped", "The column is added and old rows get NULL", "The write fails with a schema mismatch and nothing is committed", "The table is converted to Parquet"],
+   "c": 2,
+   "e": "Delta enforces the table schema on write. Add `.option(\"mergeSchema\", \"true\")` to add the new column on purpose."},
+  {"q": "You need to reload only the orders of March 2025 in a table that holds two years. Which write is right?",
+   "o": ["`df.write.mode(\"overwrite\").option(\"replaceWhere\", \"order_date >= '2025-03-01' AND order_date < '2025-04-01'\").saveAsTable(\"t\")`", "`df.write.mode(\"overwrite\").saveAsTable(\"t\")`", "`df.write.mode(\"append\").option(\"mergeSchema\", \"true\").saveAsTable(\"t\")`", "`df.write.mode(\"ignore\").saveAsTable(\"t\")`"],
+   "c": 0,
+   "e": "`replaceWhere` makes the overwrite remove only the rows that match the predicate. A plain overwrite would replace the whole table with March."},
+  {"q": "A long query reads a Delta table while another job overwrites it. What does the query see?",
+   "o": ["A mix of old and new files", "An empty table until the overwrite finishes", "An error, because the table is locked", "The complete version that was current when it started reading"],
+   "c": 3,
+   "e": "Readers use a snapshot of the log. The overwrite becomes visible only through its commit, so a reader sees the old version or the new one, never a mix."},
+  {"q": "Which code reads a Delta table as it was at version 3?",
+   "o": ["`spark.table(\"t\").version(3)`", "`spark.read.option(\"versionAsOf\", 3).table(\"t\")`", "`DeltaTable.forName(spark, \"t\").history(3)`", "`spark.read.format(\"delta\").load(\"t\", version=3)`"],
+   "c": 1,
+   "e": "The `versionAsOf` (or `timestampAsOf`) reader option selects an older version. `history()` lists the commits but does not return the data."},
+  {"q": "A `DeltaTable` merge fails because several source rows matched the same target row. What is the fix?",
+   "o": ["Add `whenNotMatchedInsertAll()`", "Run the merge with `mode(\"overwrite\")`", "Deduplicate the source so that each key appears once, for example keep the latest change per key", "Call `optimize()` before the merge"],
+   "c": 2,
+   "e": "MERGE requires each target row to be matched by at most one source row. Deduplicate or aggregate the source by the merge key first."}
+]

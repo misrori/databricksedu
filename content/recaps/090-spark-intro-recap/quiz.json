@@ -1,0 +1,22 @@
+[
+  {"q": "A cluster has 4 worker nodes with 8 cores each. A stage has 320 partitions. How many tasks of that stage can run at the same time?",
+   "o": ["4", "8", "32", "320"],
+   "c": 2,
+   "e": "Each executor core is one task slot, so 4 x 8 = 32 tasks run in parallel. The 320 tasks run in about 10 waves."},
+  {"q": "Which step in `orders.filter(...).groupBy(\"product_id\").count()` creates a new stage?",
+   "o": ["`filter`, because it removes rows", "`groupBy(...).count()`, because rows with the same key must be shuffled together", "Reading the table, because every read is a stage", "None: the whole query is always one stage"],
+   "c": 1,
+   "e": "Aggregating by a key is a wide transformation. Rows with the same key must move to the same partition, which needs a shuffle, and every shuffle is a stage boundary."},
+  {"q": "During a shuffle, what does the map side do?",
+   "o": ["Writes its rows to local shuffle files, bucketed by hash(key)", "Sends all rows to the driver, which redistributes them", "Rewrites the source Delta table sorted by key", "Fetches buckets from other executors over the network"],
+   "c": 0,
+   "e": "Map tasks write shuffle files grouped by hash(key). The reduce side then fetches its bucket from every map task over the network. The driver is not in the data path."},
+  {"q": "You run five transformations on a DataFrame, then nothing. How much data has Spark read?",
+   "o": ["All of it, once per transformation", "Only the first partition", "The schema and one sample row per transformation", "None: transformations are lazy until an action runs"],
+   "c": 3,
+   "e": "Transformations only build a plan. An action such as count(), display() or write starts a job, and only then is data read."},
+  {"q": "A 500-million-row DataFrame must be summarised per region for a small report. What is the right approach?",
+   "o": ["`collect()` the rows and loop over them in Python", "Convert it to pandas with `toPandas()` and use pandas groupby", "Aggregate with `groupBy(\"region\")` and collect only the small result", "Write it to CSV and open the file on the driver"],
+   "c": 2,
+   "e": "Aggregate on the executors first, so only one row per region travels back to the driver. Collecting raw rows can crash the driver."}
+]

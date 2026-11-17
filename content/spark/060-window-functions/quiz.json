@@ -1,0 +1,22 @@
+[
+  {"q": "What is the main difference between `groupBy(\"category\").agg(F.sum(\"revenue\"))` and `F.sum(\"revenue\").over(Window.partitionBy(\"category\"))`?",
+   "o": ["The window version is always faster", "The window version keeps every input row and adds the category total to each one", "`groupBy` cannot sum doubles", "The window version needs an orderBy to run"],
+   "c": 1,
+   "e": "A `groupBy` collapses each group into one row. A window function computes a value per row from a frame of related rows, so the row count does not change."},
+  {"q": "Revenues in one partition, ordered descending: 500, 400, 400, 300. What does `dense_rank` give the row with 300?",
+   "o": ["2", "4", "5", "3"],
+   "c": 3,
+   "e": "The tie shares rank 2, and `dense_rank` leaves no gap, so 300 gets 3. `rank` would give 4, `row_number` also 4."},
+  {"q": "Which frame gives a running total?",
+   "o": ["`rowsBetween(Window.unboundedPreceding, Window.currentRow)`", "`rowsBetween(-1, 1)`", "`rowsBetween(Window.currentRow, Window.unboundedFollowing)`", "No frame and no orderBy"],
+   "c": 0,
+   "e": "The frame starts at the first row of the partition and ends at the current row, so each row sums everything up to itself."},
+  {"q": "`F.last(\"revenue\").over(Window.partitionBy(\"category\").orderBy(\"order_date\"))` returns the current row's revenue. Why?",
+   "o": ["`last` ignores the orderBy", "`last` only works on strings", "With an orderBy and no explicit frame, the frame ends at the current row", "The partition has only one row"],
+   "c": 2,
+   "e": "The default frame of an ordered window runs from the first row to the current row. Use `rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing)` to see the whole partition."},
+  {"q": "You need exactly the top 3 products per category, even when revenues tie. Which pattern?",
+   "o": ["`groupBy(\"category\").agg(F.max(\"revenue\"))`", "`orderBy(F.desc(\"revenue\")).limit(3)`", "`dense_rank` over the category window, filter `<= 3`", "`row_number` over a window partitioned by category and ordered by revenue, then filter `<= 3`"],
+   "c": 3,
+   "e": "`row_number` gives every row a unique number inside its partition, so the filter keeps exactly 3. `limit(3)` would give 3 rows in total, and `dense_rank` can return more with ties."}
+]

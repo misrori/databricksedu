@@ -1,0 +1,22 @@
+[
+  {"q": "A query is slow. In which order should you look for fixes?",
+   "o": ["Add workers, then tune configs, then change the code", "Read less data, then shuffle less, then compute less", "Cache everything, then repartition, then read less", "Rewrite in Scala, then add workers"],
+   "c": 1,
+   "e": "Reading fewer bytes makes every later step cheaper, and fewer rows make shuffles and computation cheaper. Hardware is the last resort."},
+  {"q": "`explain(\"formatted\")` shows `PushedFilters: [EqualTo(status,COMPLETED)]` on the scan. What does that mean?",
+   "o": ["The filter is evaluated only after the join", "The filter was ignored", "The table was cached", "The filter is passed to the reader, which can use file statistics to skip files"],
+   "c": 3,
+   "e": "Predicate pushdown sends the filter to the scan. With min and max statistics per file, files that cannot match are skipped."},
+  {"q": "Why is a Python UDF usually slower than the equivalent built-in function?",
+   "o": ["Every row is serialized to a Python worker and back, and the optimizer cannot look inside it", "Python UDFs run only on the driver", "Python UDFs disable AQE for the whole cluster", "Built-in functions are cached automatically"],
+   "c": 0,
+   "e": "The UDF is a black box running in a separate Python process. Built-ins run in the JVM or Photon and allow pruning and pushdown."},
+  {"q": "You want to reuse an expensive intermediate result several times in a serverless notebook. What works?",
+   "o": ["`df.cache()`", "`df.persist(StorageLevel.MEMORY_AND_DISK)`", "Write it to a table and read that table", "`spark.sparkContext.broadcast(df)`"],
+   "c": 2,
+   "e": "Caching APIs and the SparkContext are not available on serverless. A table is the reusable, shareable form of the result."},
+  {"q": "A job appends one day of data per loop iteration, 365 times. What is the main problem?",
+   "o": ["Delta cannot append more than 100 times", "Each append is a separate commit that writes new small files, which slows down every later read", "Appends disable data skipping", "The loop runs on the executors"],
+   "c": 1,
+   "e": "Many small writes create many small files and versions. Build one DataFrame and write it once, or compact with OPTIMIZE."}
+]

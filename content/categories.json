@@ -1,6 +1,8 @@
 [
   {"id": "data-engineering", "title": "Data Engineering", "icon": "🛠️",
    "desc": "From Parquet files and the Delta transaction log to streaming pipelines, jobs and CI/CD. Small modules, one idea each."},
+  {"id": "spark", "title": "Apache Spark Programming", "icon": "🔥",
+   "desc": "DataFrames from the first read to window functions, complex types, streaming, the Spark UI and tuning. Follows the Apache Spark Programming with Databricks course."},
   {"id": "machine-learning", "title": "Machine Learning", "icon": "🤖",
    "desc": "The ML lifecycle on Databricks: MLflow tracking, feature tables, tuning, models in Unity Catalog, serving and monitoring."},
   {"id": "generative-ai", "title": "Generative AI", "icon": "✨",

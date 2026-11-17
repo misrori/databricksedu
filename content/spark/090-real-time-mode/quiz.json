@@ -1,0 +1,22 @@
+[
+  {"q": "Why does a micro-batch query take seconds to deliver even a single event?",
+   "o": ["Kafka buffers events for several seconds", "Every batch pays fixed overhead (offsets, planning, scheduling, commit) and new events wait for the next batch", "Delta tables can only be written once per second", "The checkpoint is written after every row"],
+   "c": 1,
+   "e": "The work per event is tiny, but each micro-batch has fixed steps before and after processing. Real-time mode keeps one long batch running so records do not wait for the next one."},
+  {"q": "What does the interval in `.trigger(realTime=\"5 minutes\")` control?",
+   "o": ["The maximum end-to-end latency", "How long records wait before processing", "How long each long-running batch lasts, so how often progress is checkpointed", "How often Kafka is polled"],
+   "c": 2,
+   "e": "Records are processed continuously inside the batch. The interval only sets the batch length and therefore the checkpoint frequency. In Python it is required."},
+  {"q": "Which compute can run a real-time mode query?",
+   "o": ["Serverless notebooks", "A classic cluster in standard access mode with autoscaling", "A Lakeflow Spark Declarative Pipeline", "A classic cluster in dedicated access mode, DBR 16.4 LTS or later, Photon and autoscaling off, with the real-time Spark config"],
+   "c": 3,
+   "e": "Real-time mode is not supported on serverless, standard access mode or declarative pipelines, and it needs `spark.databricks.streaming.realTimeMode.enabled true` on the cluster."},
+  {"q": "A real-time query has a stage with 16 tasks reading Kafka and a second stage with 8 tasks. How many task slots does the cluster need at least?",
+   "o": ["24", "16", "8", "12"],
+   "c": 0,
+   "e": "In real-time mode all stages run at the same time for the whole batch, so the slots must cover the tasks of all stages together: 16 + 8."},
+  {"q": "A team refreshes a sales dashboard every 15 minutes from a Delta table. Which trigger fits best?",
+   "o": ["Real-time mode, because it is the newest", "`continuous`", "A scheduled job with `availableNow=True`", "Real-time mode with `realTime=\"15 minutes\"`"],
+   "c": 2,
+   "e": "Minutes of latency is fine for analytics. An `availableNow` job processes what is new and stops, it runs on serverless, and you pay only while it runs."}
+]

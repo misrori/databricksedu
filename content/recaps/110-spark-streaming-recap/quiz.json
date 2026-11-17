@@ -1,0 +1,22 @@
+[
+  {"q": "A streaming query with a checkpoint has already processed 3 files. A 4th file lands and the query runs again with `availableNow`. What does it read?",
+   "o": ["All 4 files, because availableNow always starts from the beginning", "Only the 4th file, because the checkpoint records what was processed", "Nothing, because availableNow runs only once per checkpoint", "Only the first file, as a sample"],
+   "c": 1,
+   "e": "The checkpoint stores the offsets of processed data, so each run reads only new input. availableNow processes everything new, then stops."},
+  {"q": "With `withWatermark(\"event_ts\", \"10 minutes\")`, the latest event seen is at 10:31. A 10:12 event for the 10:00-10:15 window arrives. What happens in append mode?",
+   "o": ["It is added to the window and the window is emitted again", "The query fails with a late-data error", "It is dropped, because the window ended before the watermark (10:21)", "It is written to a separate late-data table automatically"],
+   "c": 2,
+   "e": "The watermark is 10:31 minus 10 minutes = 10:21. The 10:00-10:15 window is already final and its state dropped, so the late event is ignored."},
+  {"q": "Which trigger should a new scheduled incremental job use, especially on serverless compute?",
+   "o": ["`trigger(availableNow=True)`", "`trigger(once=True)`", "`trigger(processingTime=\"0 seconds\")`", "`trigger(realTime=\"5 minutes\")`"],
+   "c": 0,
+   "e": "availableNow processes all available data (possibly in several batches) and stops. Serverless supports only availableNow and the deprecated once trigger."},
+  {"q": "Which statement about Real-Time Mode is true?",
+   "o": ["It runs on serverless notebooks and supports all output modes", "It is enabled with `trigger(availableNow=True)`", "It is the default engine for Lakeflow Spark Declarative Pipelines", "It processes records continuously for sub-second latency and supports only update mode"],
+   "c": 3,
+   "e": "Real-Time Mode (Public Preview) processes records continuously instead of in micro-batches. It needs classic compute in Dedicated access mode, uses `.outputMode(\"update\")` and `trigger(realTime=...)`."},
+  {"q": "You need a 10-minute moving average that is updated every 5 minutes. Which window do you use?",
+   "o": ["A tumbling window of 10 minutes", "A sliding window: `window(\"event_ts\", \"10 minutes\", \"5 minutes\")`", "A session window with a 5-minute gap", "No window: group by ingest_ts"],
+   "c": 1,
+   "e": "A sliding window has a length (10 minutes) and a slide (5 minutes), so windows overlap and each event counts in two of them."}
+]

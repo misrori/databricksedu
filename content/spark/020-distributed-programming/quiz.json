@@ -1,0 +1,22 @@
+[
+  {"q": "In `big = spark.table(\"fact_orders\").filter(F.col(\"quantity\") > 3)`, where is data read when this line runs?",
+   "o": ["On the driver", "On every executor", "Nowhere: the line only adds a step to the plan", "In the notebook browser tab"],
+   "c": 2,
+   "e": "Transformations only build a plan on the driver. Executors read data when an action such as `write`, `count` or `collect` runs."},
+  {"q": "A notebook calls `toPandas()` on a 500 GB table and crashes. What is the root cause?",
+   "o": ["pandas cannot read Delta tables", "All rows are copied into the memory of one driver process", "The executors run out of disk space", "toPandas() is not allowed on serverless"],
+   "c": 1,
+   "e": "`toPandas()` is a `collect()` plus a pandas copy. The driver is one process, so its memory does not grow with the cluster."},
+  {"q": "A UDF increments a Python variable `counter` defined in the notebook. After the query, `counter` is still 0. Why?",
+   "o": ["UDFs never run", "The UDF ran on the driver before the query", "Spark resets globals after each action", "The function and its variables were serialized and run on executors, which change only their own copies"],
+   "c": 3,
+   "e": "Closures are shipped to executors as copies. Changes on the executors never travel back to the driver's variable."},
+  {"q": "An executor fails while holding one partition of an intermediate result. What does Spark do?",
+   "o": ["Recomputes only the lost partition from its lineage", "Restarts the whole notebook", "Returns a result without that partition", "Asks you to re-run the cell"],
+   "c": 0,
+   "e": "DataFrames are immutable and remember the steps that built them, so Spark replays the lineage for the lost partition on another executor."},
+  {"q": "A daily job loads one day with `mode(\"append\")`. After a retry the day appears twice. Which change makes the load idempotent?",
+   "o": ["Add `.limit(100000)` to the DataFrame", "Run the job on a bigger cluster", "Write with `mode(\"overwrite\")` and `option(\"replaceWhere\", \"order_date = '...'\")`", "Call `collect()` before writing"],
+   "c": 2,
+   "e": "Overwriting exactly the slice you load (or using MERGE) gives the same table no matter how many times the job runs."}
+]

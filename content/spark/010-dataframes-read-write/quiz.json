@@ -1,0 +1,22 @@
+[
+  {"q": "You read a CSV folder with `option(\"header\", \"true\")` but no schema and no `inferSchema`. What type do the columns get?",
+   "o": ["The types stored in the CSV header", "STRING for every column", "Whatever types the target table has", "INT for numbers, STRING for the rest"],
+   "c": 1,
+   "e": "CSV carries no type information. Without a schema or inference, Spark reads every column as a string."},
+  {"q": "Why is an explicit schema usually better than `inferSchema` in a production job?",
+   "o": ["Inference is not supported on serverless", "Inference only works on JSON files", "Explicit schemas compress the data better", "Inference costs an extra pass over the data and the types can change between runs"],
+   "c": 3,
+   "e": "To infer types Spark must scan the files before the real read, and new files with odd values can change the inferred types."},
+  {"q": "A nightly job runs `df.write.mode(\"append\").saveAsTable(\"sales\")`. It fails half-way, and you simply re-run it. What is the risk?",
+   "o": ["Rows that were already appended by a successful earlier run of the same data are added again", "The table is dropped", "The schema is inferred again", "Nothing: append is always safe to repeat"],
+   "c": 0,
+   "e": "Append adds whatever the DataFrame holds. Re-running the same input appends the same rows a second time unless you overwrite or merge."},
+  {"q": "What does `df.createOrReplaceTempView(\"v\")` do?",
+   "o": ["Copies the data into a new Delta table", "Writes the DataFrame to a volume", "Gives the DataFrame's plan a name that SQL in the same session can query", "Caches the DataFrame in memory"],
+   "c": 2,
+   "e": "A temp view is only a name for a plan, valid in the current session. SQL and DataFrames share the same engine, so `spark.sql` can query it."},
+  {"q": "Which write makes the result a table in Unity Catalog that others can query by name?",
+   "o": ["`df.write.format(\"parquet\").save(\"/Volumes/c/s/v/out\")`", "`df.write.mode(\"overwrite\").saveAsTable(\"sales_clean\")`", "`df.show()`", "`df.createOrReplaceTempView(\"sales_clean\")`"],
+   "c": 1,
+   "e": "`saveAsTable` registers a managed (Delta by default) table in the current catalog and schema. `save(path)` writes only files, and a temp view disappears with the session."}
+]

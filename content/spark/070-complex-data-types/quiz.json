@@ -1,0 +1,22 @@
+[
+  {"q": "A table has 500 customers. 20 of them have a NULL `orders` array, the rest have 3 orders each. How many rows does `select(explode(\"orders\"))` return?",
+   "o": ["500", "1,500", "1,440", "1,460"],
+   "c": 2,
+   "e": "480 customers with 3 orders give 1,440 rows. `explode` drops rows whose array is NULL or empty; `explode_outer` would add 20 rows with NULL."},
+  {"q": "`orders` is an array of structs with a `quantity` field. What does `col(\"orders.quantity\")` return?",
+   "o": ["The quantity of the first order", "An error: arrays have no fields", "The sum of all quantities", "An array with the quantity of every order"],
+   "c": 3,
+   "e": "A dot on an array of structs pulls that field out of every item, so the result is an array of quantities."},
+  {"q": "You need the total quantity per customer from an `orders` array, and the table must keep one row per customer. Which is the best fit?",
+   "o": ["`aggregate(orders, 0, (acc, o) -> acc + o.quantity)`", "`explode` the array, then `groupBy` and `sum`", "A Python UDF that loops over the list", "`collect_set(orders.quantity)`"],
+   "c": 0,
+   "e": "A higher-order function folds the array inside the row and runs as a native expression. Explode plus groupBy gives the same answer but adds a shuffle."},
+  {"q": "`from_json(payload, \"id INT, tags ARRAY<STRING>\")` meets a row where `id` is the text \"abc\". What happens?",
+   "o": ["The query fails", "That field (or the whole struct) becomes NULL", "The row is dropped", "`id` is stored as the string \"abc\""],
+   "c": 1,
+   "e": "In the default PERMISSIVE mode, values that do not fit the schema become NULL. That is why you check for unexpected NULLs after parsing."},
+  {"q": "What is the difference between `collect_list` and `collect_set`?",
+   "o": ["`collect_set` keeps the input order, `collect_list` does not", "`collect_list` works only on numbers", "`collect_set` removes duplicate values, `collect_list` keeps them", "There is none; they are aliases"],
+   "c": 2,
+   "e": "Both fold rows into an array. `collect_set` keeps each distinct value once. Neither promises an order, so sort the result if order matters."}
+]

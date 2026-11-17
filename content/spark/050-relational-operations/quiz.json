@@ -1,0 +1,22 @@
+[
+  {"q": "You need every customer, with their orders if they have any. `customers` is the left DataFrame. Which join type?",
+   "o": ["`inner`", "`left_semi`", "`left`", "`right`"],
+   "c": 2,
+   "e": "A left join keeps every row of the left side. Customers without orders get NULL in the order columns. An inner join would drop them."},
+  {"q": "What does `customers.join(orders, \"customer_id\", \"left_anti\")` return?",
+   "o": ["Customers that have no matching order, with the customer columns only", "Orders that have no matching customer", "Customers with their orders, plus NULL rows for the rest", "Every customer-order pair"],
+   "c": 0,
+   "e": "An anti join keeps the left rows with no match on the right and returns only the left columns."},
+  {"q": "`a` has columns `(name, city)`, `b` has `(city, name)`, both strings. What does `a.union(b)` do?",
+   "o": ["Raises an error because the column order differs", "Matches the columns by name", "Removes duplicate rows", "Matches by position, so b's cities land in the name column, without any error"],
+   "c": 3,
+   "e": "`union` is positional, like SQL `UNION ALL`. `unionByName` matches columns by name and is the safe choice."},
+  {"q": "After `o.join(c, o.customer_id == c.customer_id)`, `select(\"customer_id\")` fails. Why?",
+   "o": ["`customer_id` is a reserved word", "The result has two columns called `customer_id`, so the reference is ambiguous", "Expression joins drop the key column", "`select` cannot follow a join without `alias`"],
+   "c": 1,
+   "e": "An expression join keeps the key from both sides. Join on the name (`\"customer_id\"`) or drop one copy to fix it."},
+  {"q": "`a` = 1, 1, 2 and `b` = 1. What do `a.subtract(b)` and `a.exceptAll(b)` return?",
+   "o": ["2 and 2", "2 and 1, 2", "1, 2 and 2", "1, 1, 2 and 1, 2"],
+   "c": 1,
+   "e": "`subtract` is SQL `EXCEPT`: distinct rows of `a` not in `b`. `exceptAll` removes one copy per matching row in `b`, so one 1 is left."}
+]
