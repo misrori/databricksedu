@@ -45,6 +45,13 @@ databricksedu.save("delta-table-anatomy")      # copy its notebooks to /Workspac
 databricksedu.save("data-engineering")         # a whole track, or save("all")
 ```
 
+## On the web
+
+Everything is also published as a website: **https://misrori.github.io/databricksedu/**. It has the same app
+(slides, notes, quizzes), the hand-made extras (the Databricks story, a broadcast hash join animation, an OPTIMIZE &
+VACUUM deck) and the Markdown of every module under `markdown/<module id>.md`. The website is rebuilt from `main` by
+`.github/workflows/pages.yml` (`python tools/build.py && python tools/site.py`).
+
 ## Demo data in one line
 
 Six datasets (retail, iot, churn, support, hr, cdc), each with several tables joined by real primary and

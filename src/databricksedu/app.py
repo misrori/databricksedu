@@ -8,17 +8,29 @@ from . import catalog
 from ._version import __version__
 
 DEFAULT_HEIGHT = 820
+SITE_URL = "https://misrori.github.io/databricksedu/"
+
+# Hand-made extras that live on the website (site/extras/); the app links to them.
+EXTRAS = [
+    {"id": "databricks-story", "icon": "🎨", "title": "The Databricks story",
+     "desc": "An animated sketch story: from one machine to a data + AI platform.", "module": "databricks-story"},
+    {"id": "broadcast-hash-join", "icon": "🎬", "title": "Broadcast hash join",
+     "desc": "A whiteboard animation: how a small table travels to every worker.", "module": "broadcast-hash-join"},
+    {"id": "optimize-vacuum", "icon": "🧹", "title": "OPTIMIZE & VACUUM",
+     "desc": "A slide deck about the small-file problem and how Delta cleans it up.", "module": "small-files-problem"},
+]
 
 
 def _js_json(obj):
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
-def page(route="home", height=DEFAULT_HEIGHT, bar=False, only=None, compress=True):
+def page(route="home", height=DEFAULT_HEIGHT, bar=False, only=None, compress=True, web=False):
     """The whole app as one self-contained HTML document.
 
     only       list of module ids to include (default: everything)
     compress   False embeds the content uncompressed (bigger page, works in very old browsers)
+    web        True for the public website: the app fills the browser window, extras use relative links
     """
     cats, content = [], {}
     for c in catalog.categories():
@@ -31,12 +43,16 @@ def page(route="home", height=DEFAULT_HEIGHT, bar=False, only=None, compress=Tru
             blob = catalog.web_blob(m["id"])
             content[m["id"]] = {"z": blob} if compress else {
                 "j": json.loads(gzip.decompress(base64.b64decode(blob)).decode("utf-8"))}
-    data = {"version": __version__, "cfg": {"route": route, "height": height, "bar": bool(bar)},
-            "categories": cats, "content": content}
+    extras = [dict(x, url=("extras/%s/" % x["id"]) if web else "%sextras/%s/" % (SITE_URL, x["id"])) for x in EXTRAS]
+    data = {"version": __version__, "cfg": {"route": route, "height": height, "bar": bool(bar), "web": bool(web),
+                                            "page": bool(web), "site": SITE_URL},
+            "categories": cats, "content": content, "extras": extras}
     css = catalog.asset("dbx.css") + catalog.asset("viz.css") + catalog.asset("app.css")
     js = catalog.asset("viz.js") + "\n" + catalog.asset("quiz.js") + "\n" + catalog.asset("app.js")
     return ('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1"><title>databricksedu</title>'
+            '<meta name="description" content="Bite-sized Databricks lessons: animated slides, notes, notebooks '
+            'with exercises and seeded demo data.">'
             "<style>" + css + "</style></head><body>"
             '<div id="dbe" style="height:%dpx"></div>' % height
             + "<script>window.DBE=" + _js_json(data) + ";</script><script>" + js + "</script></body></html>")

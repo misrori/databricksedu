@@ -10,3 +10,5 @@ src/databricksedu/_content/
 src/databricksedu/assets/
 # local reviewer notes
 REVIEW_NOTES.md
+extra_content/
+_site/

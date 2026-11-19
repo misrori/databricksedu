@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPTIMIZE &amp; VACUUM · databricksedu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --navy: #0E1620; --navy2: #1C2A3A; --navy3: #253548; --navy4: #33445A; --ice: #CBDFEC; --red: #F11336; --white: #fff; }
+  html, body { margin: 0; height: 100%; background: #070b10; overflow: hidden; font-family: Montserrat, -apple-system, "Segoe UI", sans-serif; }
+  #viewport { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #deck { position: relative; width: 1920px; height: 1080px; flex: none; transform-origin: center center; }
+  .slide { position: absolute; inset: 0; background: var(--navy) center/cover no-repeat url(bg-slide.jpg); color: var(--white);
+    padding: 120px 150px; box-sizing: border-box; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s; }
+  .slide.cover { background-image: url(bg-cover.jpg); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .slide.on { opacity: 1; visibility: visible; }
+  .kicker { font: 700 30px/1 "JetBrains Mono", monospace; letter-spacing: .18em; color: var(--red); text-transform: uppercase; }
+  h1 { font-size: 150px; font-weight: 800; margin: 30px 0 26px; letter-spacing: -.02em; line-height: 1; }
+  h2 { font-size: 92px; font-weight: 800; margin: 22px 0 18px; letter-spacing: -.01em; }
+  p.lead { font-size: 38px; line-height: 1.4; color: var(--ice); max-width: 1500px; margin: 0; font-weight: 500; }
+  .cover p.lead { max-width: 1250px; }
+  code, .mono { font-family: "JetBrains Mono", monospace; }
+  .code { display: inline-flex; align-items: center; gap: 22px; margin-top: 46px; background: rgba(14,22,32,.82); border: 2px solid var(--navy4);
+    border-radius: 18px; padding: 26px 38px; font: 600 44px/1 "JetBrains Mono", monospace; }
+  .code b { color: var(--red); } .code i { color: var(--ice); font-style: normal; }
+  /* reveal: children with --d animate in after the slide becomes active */
+  .rv { opacity: 0; transform: translateY(26px); transition: opacity .6s ease, transform .6s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--d, 0) * 1s); }
+  .on .rv { opacity: 1; transform: none; }
+  /* file tiles */
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-top: 50px; width: 1240px; }
+  .tile { background: rgba(37,53,72,.88); border: 2px solid var(--navy4); border-radius: 14px; padding: 16px 18px; position: relative;
+    font: 600 22px/1.25 "JetBrains Mono", monospace; color: var(--ice); opacity: 0; transform: scale(.85);
+    transition: opacity .35s ease, transform .35s ease, filter .5s, background .5s; transition-delay: calc(var(--k) * 35ms + .3s); }
+  .tile small { display: block; color: #9fb3c6; font-size: 19px; font-weight: 400; margin-top: 4px; }
+  .on .tile { opacity: 1; transform: none; }
+  .tile.old { filter: grayscale(1); opacity: .35 !important; }
+  .tile .x { position: absolute; right: 12px; top: 10px; color: var(--red); font-size: 30px; font-weight: 700; opacity: 0;
+    transition: opacity .3s; transition-delay: calc(var(--k) * 50ms + 1s); }
+  .on .tile .x { opacity: 1; }
+  .big { display: flex; gap: 34px; margin-top: 50px; }
+  .bigfile { width: 380px; height: 250px; border-radius: 22px; background: linear-gradient(160deg, rgba(241,19,54,.32), rgba(37,53,72,.92));
+    border: 3px solid var(--red); box-sizing: border-box; padding: 30px; display: flex; flex-direction: column; justify-content: flex-end;
+    font: 700 30px/1.3 "JetBrains Mono", monospace; box-shadow: 0 20px 60px rgba(241,19,54,.25); }
+  .bigfile small { color: var(--ice); font-weight: 400; font-size: 26px; }
+  .stats { position: absolute; right: 150px; top: 330px; display: flex; flex-direction: column; gap: 26px; }
+  .stat { background: rgba(14,22,32,.8); border: 2px solid var(--navy4); border-radius: 20px; padding: 26px 36px; min-width: 300px; }
+  .stat .l { font: 700 22px/1 "JetBrains Mono", monospace; color: #9fb3c6; letter-spacing: .14em; }
+  .stat .v { font-size: 76px; font-weight: 800; margin-top: 10px; }
+  .stat .v em { color: var(--red); font-style: normal; }
+  .stat .s { font-size: 22px; color: var(--ice); margin-top: 4px; }
+  .row { display: flex; align-items: center; gap: 40px; }
+  .arrow { font-size: 80px; color: var(--red); font-weight: 800; }
+  .split { display: flex; gap: 60px; margin-top: 46px; align-items: flex-start; }
+  .label { font: 700 24px/1 "JetBrains Mono", monospace; letter-spacing: .1em; color: var(--ice); text-transform: uppercase; margin-bottom: 18px; }
+  .days { display: grid; grid-template-columns: repeat(8, 1fr); gap: 14px; margin-top: 60px; width: 1620px; }
+  .day { border-radius: 18px; padding: 26px 18px; text-align: center; border: 2px solid var(--navy4); background: rgba(37,53,72,.85); }
+  .day b { display: block; font-size: 34px; } .day span { display: block; margin-top: 10px; font: 600 21px/1 "JetBrains Mono", monospace; color: var(--ice); }
+  .day.mark { border-color: var(--ice); } .day.del { border-color: var(--red); background: rgba(241,19,54,.25); }
+  .day.del span { color: #fff; }
+  .conf { margin-top: 46px; font: 600 30px/1 "JetBrains Mono", monospace; color: var(--ice); }
+  .conf b { color: var(--red); }
+  .end h1 { font-size: 120px; } .end h1 span { color: var(--red); }
+  .pair { display: flex; gap: 40px; margin-top: 60px; }
+  .pair .code { margin: 0; font-size: 38px; }
+  #ui { position: fixed; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 10; }
+  #ui button { border: 1px solid rgba(203,223,236,.35); background: rgba(14,22,32,.75); color: #fff; border-radius: 10px; padding: 8px 13px;
+    font: 600 14px/1 Montserrat, sans-serif; cursor: pointer; }
+  #ui button:hover { border-color: var(--red); }
+  #count { color: #CBDFEC; font: 600 13px/1 "JetBrains Mono", monospace; margin: 0 6px; }
+  #notes { position: fixed; left: 16px; right: 16px; bottom: 60px; max-width: 900px; margin: 0 auto; background: rgba(14,22,32,.92); color: #CBDFEC;
+    border: 1px solid #33445A; border-radius: 12px; padding: 12px 16px; font: 500 15px/1.5 Montserrat, sans-serif; display: none; z-index: 10; }
+  #notes.on { display: block; }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+  <section class="slide cover" data-note="Delta Lake table maintenance: OPTIMIZE compacts small files, VACUUM cleans up the leftovers.">
+    <div class="kicker rv">Delta Lake · Table maintenance</div>
+    <h1 class="rv" style="--d:.15">OPTIMIZE &amp; VACUUM</h1>
+    <p class="lead rv" style="--d:.3">How Delta compacts small files into big ones, and safely cleans up the leftovers.</p>
+  </section>
+
+  <section class="slide" data-note="Streaming and frequent writes create thousands of tiny files. Every query has to open each one.">
+    <div class="kicker rv">The small-file problem</div>
+    <h2 class="rv" style="--d:.1">Thousands of tiny files</h2>
+    <p class="lead rv" style="--d:.2; max-width:1080px">Streaming and frequent writes scatter data into thousands of tiny files. Every query pays to open each one.</p>
+    <div class="grid" id="smallGrid"></div>
+    <div class="stats">
+      <div class="stat rv" style="--d:.5"><div class="l">ROWS</div><div class="v">4.21 M</div></div>
+      <div class="stat rv" style="--d:.7"><div class="l">FILES</div><div class="v"><em>280</em></div><div class="s">28 of them shown</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-note="OPTIMIZE bin-packs the small files into a few large files, targeting around 1 GB each.">
+    <div class="kicker rv">OPTIMIZE</div>
+    <h2 class="rv" style="--d:.1">Bin-packing</h2>
+    <p class="lead rv" style="--d:.2">Rewrites the small files into a few large files, targeting ~1 GB each.</p>
+    <div class="code rv" style="--d:.4"><b>OPTIMIZE</b> <i>events_delta;</i></div>
+    <div class="big">
+      <div class="bigfile rv" style="--d:.8">part-a01.parquet<small>~1.0 GB</small></div>
+      <div class="bigfile rv" style="--d:1.0">part-a02.parquet<small>~1.0 GB</small></div>
+      <div class="bigfile rv" style="--d:1.2">part-a03.parquet<small>~1.0 GB</small></div>
+    </div>
+  </section>
+
+  <section class="slide" data-note="OPTIMIZE doesn't delete anything. The small files stay on storage so you can still time-travel to older versions.">
+    <div class="kicker rv">The old files remain</div>
+    <h2 class="rv" style="--d:.1">Nothing is deleted yet</h2>
+    <p class="lead rv" style="--d:.2">OPTIMIZE doesn't delete anything: the small files stay on storage, so you can still time travel to older versions.</p>
+    <div class="split">
+      <div class="rv" style="--d:.4"><div class="label">Current version · 3 files</div>
+        <div class="big" style="margin-top:0;flex-direction:column;gap:18px">
+          <div class="bigfile" style="height:120px;width:420px">part-a01.parquet<small>~1.0 GB</small></div>
+          <div class="bigfile" style="height:120px;width:420px">part-a02.parquet<small>~1.0 GB</small></div>
+          <div class="bigfile" style="height:120px;width:420px">part-a03.parquet<small>~1.0 GB</small></div>
+        </div></div>
+      <div class="rv" style="--d:.6"><div class="label">Older versions · 280 files, still on disk</div>
+        <div class="grid old" id="oldGrid" style="margin-top:0;width:1000px"></div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-note="VACUUM finds files no longer referenced by the current table version and marks them for deletion.">
+    <div class="kicker rv">VACUUM</div>
+    <h2 class="rv" style="--d:.1">Clean up the leftovers</h2>
+    <p class="lead rv" style="--d:.2">VACUUM removes the old files that the current version no longer references.</p>
+    <div class="code rv" style="--d:.4"><b>VACUUM</b> <i>events_delta</i> <b>RETAIN</b> <i>168 HOURS;</i></div>
+    <div class="grid" id="vacGrid" style="margin-top:44px"></div>
+  </section>
+
+  <section class="slide" data-note="Files are only removed once they are older than the retention window, 7 days by default. Recent files stay protected.">
+    <div class="kicker rv">7-day retention window</div>
+    <h2 class="rv" style="--d:.1">Recent files stay protected</h2>
+    <p class="lead rv" style="--d:.2">Files are only removed once they're older than the retention window.</p>
+    <div class="days">
+      <div class="day mark rv" style="--d:.4"><b>Day 0</b><span>Marked</span></div>
+      <div class="day rv" style="--d:.55"><b>Day 1</b><span>Protected</span></div>
+      <div class="day rv" style="--d:.7"><b>Day 2</b><span>Protected</span></div>
+      <div class="day rv" style="--d:.85"><b>Day 3</b><span>Protected</span></div>
+      <div class="day rv" style="--d:1.0"><b>Day 4</b><span>Protected</span></div>
+      <div class="day rv" style="--d:1.15"><b>Day 5</b><span>Protected</span></div>
+      <div class="day rv" style="--d:1.3"><b>Day 6</b><span>Protected</span></div>
+      <div class="day del rv" style="--d:1.6"><b>Day 7</b><span>Deleted</span></div>
+    </div>
+    <div class="conf rv" style="--d:1.9"><b>delta.deletedFileRetentionDuration</b> = 'interval 7 days' · 168 hours</div>
+  </section>
+
+  <section class="slide" data-note="Same rows, far fewer files. Old data files are physically deleted and storage is reclaimed.">
+    <div class="kicker rv">Result</div>
+    <h2 class="rv" style="--d:.1">Same rows, far fewer files</h2>
+    <p class="lead rv" style="--d:.2">The old data files are physically deleted and the storage is reclaimed.</p>
+    <div class="row" style="margin-top:56px;gap:30px">
+      <div class="stat rv" style="--d:.4"><div class="l">ROWS</div><div class="v">4.21 M</div><div class="s">Unchanged</div></div>
+      <div class="stat rv" style="--d:.6"><div class="l">FILES ON DISK</div><div class="v">283 <em>→</em> 3</div><div class="s">After VACUUM</div></div>
+      <div class="stat rv" style="--d:.8"><div class="l">IN CURRENT VERSION</div><div class="v">3</div><div class="s">~1 GB each</div></div>
+    </div>
+    <div class="big">
+      <div class="bigfile rv" style="--d:1.0;height:150px">part-a01.parquet<small>~1.0 GB</small></div>
+      <div class="bigfile rv" style="--d:1.15;height:150px">part-a02.parquet<small>~1.0 GB</small></div>
+      <div class="bigfile rv" style="--d:1.3;height:150px">part-a03.parquet<small>~1.0 GB</small></div>
+    </div>
+  </section>
+
+  <section class="slide cover end" data-note="Recap: OPTIMIZE for ~1 GB files, VACUUM cleans up after 7 days.">
+    <h1 class="rv">Fewer files. Same data.<br><span>Lower cost.</span></h1>
+    <div class="pair">
+      <div class="code rv" style="--d:.4"><b>OPTIMIZE</b> <i>→ ~1 GB files</i></div>
+      <div class="code rv" style="--d:.6"><b>VACUUM</b> <i>→ cleans up after 7 days</i></div>
+    </div>
+  </section>
+
+</div></div>
+<div id="notes"></div>
+<div id="ui">
+  <button id="bPrev" title="Previous (←)">←</button>
+  <span id="count"></span>
+  <button id="bNext" title="Next (→)">→</button>
+  <button id="bNotes" title="Speaker notes (N)">Notes</button>
+  <button id="bFull" title="Full screen (F)">⛶</button>
+</div>
+<script>
+(function () {
+  var sizes = [8, 15, 11, 7, 14, 10, 6, 13, 9, 5, 12, 8, 15, 11, 7, 14, 10, 6, 13, 9, 5, 12, 8, 15, 11, 7, 14, 10];
+  function fill(id, withX) {
+    var g = document.getElementById(id), h = '';
+    sizes.forEach(function (mb, k) {
+      var n = ('00' + (k + 1)).slice(-3);
+      h += '<div class="tile" style="--k:' + k + '">part-' + n + '<small>' + mb + ' MB</small>' + (withX ? '<span class="x">✕</span>' : '') + '</div>';
+    });
+    g.innerHTML = h;
+  }
+  fill('smallGrid'); fill('oldGrid'); fill('vacGrid', true);
+  document.querySelectorAll('#oldGrid .tile').forEach(function (t) { t.classList.add('old'); });
+
+  var slides = document.querySelectorAll('.slide'), i = 0, deck = document.getElementById('deck');
+  function fit() {
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    deck.style.transform = 'scale(' + s + ')';
+  }
+  function go(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    document.getElementById('count').textContent = (i + 1) + ' / ' + slides.length;
+    document.getElementById('notes').textContent = slides[i].dataset.note || '';
+    try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) { }
+  }
+  function full() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+  document.getElementById('bPrev').onclick = function () { go(i - 1); };
+  document.getElementById('bNext').onclick = function () { go(i + 1); };
+  document.getElementById('bFull').onclick = full;
+  document.getElementById('bNotes').onclick = function () { document.getElementById('notes').classList.toggle('on'); };
+  document.getElementById('viewport').addEventListener('click', function (e) {
+    if (e.target.closest('#ui')) return;
+    go(e.clientX > window.innerWidth / 3 ? i + 1 : i - 1);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(i - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(slides.length - 1);
+    else if (e.key === 'f' || e.key === 'F') full();
+    else if (e.key === 'n' || e.key === 'N') document.getElementById('notes').classList.toggle('on');
+  });
+  window.addEventListener('resize', fit);
+  fit();
+  go((parseInt(location.hash.slice(1), 10) || 1) - 1);
+})();
+</script>
+<script src="../_shared/back.js"></script>
+</body>
+</html>

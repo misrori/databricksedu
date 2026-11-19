@@ -152,3 +152,12 @@ body:has(#dbe.page){overflow:hidden}
 
 /* accessibility: no motion, and never leave content stuck at an animation start frame */
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+.xtras{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:0 0 16px}
+.xcard{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--line);text-decoration:none;color:#0F172A;transition:transform .15s,box-shadow .15s,border-color .15s}
+.xcard:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(15,23,42,.1);border-color:#FF3621}
+.xcard .xi{font-size:26px;flex:none}
+.xcard b{display:block;font-size:14.5px}
+.xcard small{display:block;color:#64748B;font-size:12.5px;line-height:1.35;margin-top:2px}
+.xcard .xgo{margin-left:auto;flex:none;font-size:12px;font-weight:700;color:#FF3621}
+.hhero p code{background:rgba(255,255,255,.14);padding:1px 6px;border-radius:6px;font-size:.92em}

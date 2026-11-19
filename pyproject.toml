@@ -31,7 +31,7 @@ pandas = ["pandas"]
 dev = ["pytest", "markdown>=3.5", "pygments>=2.17", "build", "twine"]
 
 [project.urls]
-Homepage = "https://github.com/misrori/databricksedu"
+Homepage = "https://misrori.github.io/databricksedu/"
 Source = "https://github.com/misrori/databricksedu"
 "Practice exams" = "https://goldhandacademy.com"
 

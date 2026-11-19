@@ -1,0 +1,22 @@
+[
+  {"q": "A streaming table holds 2.8 GB in 280 files of about 10 MB. Why are queries slower than on the same data in 3 files?",
+   "o": ["Small files are stored uncompressed", "Every file costs a log entry, a storage request and a footer read, whatever its size", "Small files cannot be read in parallel", "Delta Lake limits a query to 100 files"],
+   "c": 1,
+   "e": "The per-file overhead (listing, open call, footer and statistics) is paid 280 times instead of 3. With thousands of files it dominates the query time."},
+  {"q": "You run `OPTIMIZE events_delta` and `DESCRIBE DETAIL` drops from 280 to 3 files. How many data files are on disk right after the command?",
+   "o": ["3", "280", "283", "0"],
+   "c": 2,
+   "e": "OPTIMIZE writes 3 new files and only marks the 280 old ones as removed. They stay on disk for time travel until VACUUM deletes them."},
+  {"q": "You run `VACUUM events_delta` one hour after an OPTIMIZE, with default settings. What happens to the 280 retired files?",
+   "o": ["Nothing: they are younger than the 7-day retention window", "They are all deleted", "They are moved into `_delta_log`", "VACUUM fails with an error"],
+   "c": 0,
+   "e": "VACUUM only deletes files that have been retired for longer than `delta.deletedFileRetentionDuration`, 7 days by default. Use `DRY RUN` to see what it would delete."},
+  {"q": "Why is `VACUUM t RETAIN 0 HOURS` dangerous on a live table?",
+   "o": ["It deletes the current version's files", "It rewrites the transaction log", "It disables OPTIMIZE for the table", "Running queries, lagging streams and time travel may still need the retired files it deletes"],
+   "c": 3,
+   "e": "Zero retention removes every retired file at once. Readers of recent versions fail on missing files and time travel ends immediately. Databricks blocks it unless a safety check is disabled."},
+  {"q": "Which statement about automatic maintenance is correct?",
+   "o": ["Predictive optimization runs on every external table", "Auto compaction deletes old files after 7 days", "Predictive optimization can run OPTIMIZE and VACUUM for Unity Catalog managed tables where it is enabled", "Optimized writes replace the need for VACUUM"],
+   "c": 2,
+   "e": "Predictive optimization works on Unity Catalog managed tables. Auto compaction and optimized writes reduce the number of small files, but only VACUUM deletes retired files."}
+]

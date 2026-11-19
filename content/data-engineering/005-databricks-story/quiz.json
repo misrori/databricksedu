@@ -1,0 +1,22 @@
+[
+  {"q": "Why is buying a bigger machine (scaling up) not a lasting answer to big data?",
+   "o": ["Bigger machines cannot run SQL", "There is a ceiling on how big one machine gets, and if it crashes everything stops", "Bigger machines are slower than small ones", "Scaling up requires rewriting the code in Java"],
+   "c": 1,
+   "e": "Scaling up hits the limit of the biggest box you can buy and keeps a single point of failure. Scaling out adds machines and survives the loss of one."},
+  {"q": "What was the key change Apache Spark made compared with Hadoop MapReduce?",
+   "o": ["It stopped distributing data across machines", "It replaced SQL with Scala", "It keeps intermediate data in memory instead of writing it to disk after every step", "It stores data only in a warehouse"],
+   "c": 2,
+   "e": "Spark kept the divide-and-conquer idea but avoided the disk round trip between steps, which made multi-step and iterative jobs much faster."},
+  {"q": "`df.groupBy(\"city\").count()` in PySpark looks like pandas. What is different?",
+   "o": ["Nothing, it runs on the driver like pandas", "It only works on CSV files", "It needs a Scala compiler", "It is executed lazily and in parallel across the machines of the cluster"],
+   "c": 3,
+   "e": "PySpark builds a plan and runs it distributed when an action is called. The syntax is friendly; the execution scales out."},
+  {"q": "Which problem did Delta Lake and the lakehouse solve?",
+   "o": ["Untrusted data lakes on one side and costly warehouse copies on the other", "Clusters that were hard to start", "Python being slower than Scala", "Business users unable to write SQL"],
+   "c": 0,
+   "e": "Delta Lake adds transactions, schema enforcement and history to open files in cheap storage, so one copy of the data serves BI, engineering and AI."},
+  {"q": "A company asks: who can read the salary table, and which dashboards are built on it? Which part of Databricks answers this?",
+   "o": ["Mosaic AI", "Unity Catalog", "PySpark", "Hadoop MapReduce"],
+   "c": 1,
+   "e": "Unity Catalog is the governance layer: permissions, audit logs and lineage for data and AI assets in one place."}
+]

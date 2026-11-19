@@ -1,0 +1,22 @@
+[
+  {"q": "In a broadcast hash join of a huge `orders` table with a small `products` table, what happens to the rows of `orders`?",
+   "o": ["They are shuffled by `product_id`", "They are collected on the driver", "They stay in their partitions and probe a local copy of the hash table", "They are broadcast to every executor"],
+   "c": 2,
+   "e": "Only the small side moves: it is collected, broadcast and built into a hash table on each executor. The big side is streamed in place."},
+  {"q": "What does `BuildRight` in a `BroadcastHashJoin` node mean?",
+   "o": ["The right side of the join was turned into the in-memory hash table", "The right side was shuffled", "The join result is written to the right table", "The right side is the probe side"],
+   "c": 0,
+   "e": "The build side is the one broadcast and hashed. `BuildRight` means the right-hand input became the hash table."},
+  {"q": "In `orders LEFT JOIN products`, which side can Spark broadcast?",
+   "o": ["Only `orders`", "Either side", "Neither side", "Only `products`"],
+   "c": 3,
+   "e": "The left side must keep its unmatched rows, so it has to be the probe side. Only the right side can be the build side."},
+  {"q": "With no hint, when does Spark plan a broadcast hash join at planning time?",
+   "o": ["When the join key is a string", "When the estimated size of one side is below `spark.sql.autoBroadcastJoinThreshold`", "Always, for every equi-join", "Only when the cluster has more than 10 executors"],
+   "c": 1,
+   "e": "The optimizer compares size estimates with the threshold (10 MB by default in Apache Spark). AQE can also switch to a broadcast at runtime when a side turns out small."},
+  {"q": "A join that used to take minutes now fails with out-of-memory errors during a `BroadcastExchange`. What is the most likely cause?",
+   "o": ["The big side has too many partitions", "The table needs `OPTIMIZE`", "The broadcast side has grown, or stale statistics make it look small, so Spark copies a large table to every executor", "Photon does not support joins"],
+   "c": 2,
+   "e": "Every executor must hold the whole build side. Remove old broadcast hints and refresh statistics with `ANALYZE TABLE ... COMPUTE STATISTICS`."}
+]

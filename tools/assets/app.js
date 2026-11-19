@@ -5,7 +5,8 @@
   var SRC = '<!DOCTYPE html>' + document.documentElement.outerHTML;
   var START = window.DBE_START || {};
   if (START.route) cfg.route = START.route;
-  if (START.page) { cfg.bar = false; root.classList.add('page'); }
+  if (START.page) { cfg.bar = false; cfg.page = true; }
+  if (cfg.page) root.classList.add('page');
   var CTA_URL = 'https://goldhandacademy.com';
   var mods = {}, cats = {};
   D.categories.forEach(function (c) {
@@ -116,10 +117,17 @@
   function renderHome() {
     var total = Object.keys(mods).length, h = '';
     h += '<div class="dbx" style="max-width:none"><div class="hhero"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div>' +
-      '<h1>databricks<em>edu</em></h1><p>Bite-sized Databricks lessons that run inside your notebook: animated slides, readable notes, ' +
-      'hands-on notebooks with exercises, and seeded demo data. Pick a module and press <b>Start</b>.</p>' +
+      '<h1>databricks<em>edu</em></h1><p>' + (cfg.web
+        ? 'Bite-sized Databricks lessons: animated slides, readable notes, hands-on notebooks with exercises, and seeded demo data. ' +
+          'Read them here, or run <code>%pip install databricksedu</code> in a Databricks notebook to open them there and save every lesson to your workspace.'
+        : 'Bite-sized Databricks lessons that run inside your notebook: animated slides, readable notes, ' +
+          'hands-on notebooks with exercises, and seeded demo data. Pick a module and press <b>Start</b>.') + '</p>' +
       '<div class="hstats"><span>📚 ' + total + ' modules</span><span>🗂️ ' + D.categories.length + ' tracks</span>' +
       '<span>🧪 seeded demo data</span><span>v' + esc(D.version) + '</span></div></div></div>';
+    if ((D.extras || []).length && !S.q) h += '<div class="xtras">' + D.extras.map(function (x) {
+      return '<a class="xcard" href="' + esc(x.url) + '" target="' + (cfg.web ? '_self' : '_blank') + '" rel="noopener"><span class="xi">' + x.icon +
+        '</span><span><b>' + esc(x.title) + '</b><small>' + esc(x.desc) + '</small></span><span class="xgo">Open ↗</span></a>';
+    }).join('') + '</div>';
     h += '<div class="hrow"><div class="cats">' + D.categories.map(function (c) {
       return '<button class="cat' + (c.id === S.cat && !S.q ? ' on' : '') + '" data-cat="' + c.id + '">' + c.icon + ' ' + esc(c.title) + ' <i>' + c.modules.length + '</i></button>';
     }).join('') + '</div><input id="q" placeholder="🔎 Search all modules" value="' + esc(S.q) + '"></div>';
@@ -142,8 +150,8 @@
       h += card(m, i++);
     });
     if (group !== null) h += '</div>';
-    h += '<div class="hfoot">' + ctaHtml(!S.q && cat.cta) + '<div class="pip"><b>Take it with you</b><br>Every module saves to your workspace as notebooks.' +
-      '<code>databricksedu.save("all")</code></div></div></div>';
+    h += '<div class="hfoot">' + ctaHtml(!S.q && cat.cta) + '<div class="pip"><b>Take it with you</b><br>Every module saves to your Databricks workspace as notebooks.' +
+      (cfg.web ? '<code>%pip install databricksedu</code>' : '') + '<code>databricksedu.save("all")</code></div></div></div>';
     var home = $('home');
     home.innerHTML = h;
     home.querySelectorAll('.cat').forEach(function (b) { b.onclick = function () { S.cat = b.getAttribute('data-cat'); S.q = ''; renderHome(); }; });
@@ -179,15 +187,19 @@
       items = '<ul>' + m.notebooks.map(function (n) { return '<li>📓 ' + esc(n) + '</li>'; }).join('') + '<li>📝 notes as Markdown</li></ul>';
     } else if (c) { title = c.title; what = 'all ' + c.modules.length + ' modules of this track'; }
     else { id = 'all'; title = 'everything'; what = 'every module'; }
-    var cmd = 'import databricksedu\ndatabricksedu.save("' + id + '")';
+    var cmd = 'import databricksedu\ndatabricksedu.save("' + id + '")', pip = '%pip install databricksedu';
     var h = '<div class="mbox"><h3>💾 Save “' + esc(title) + '” to your workspace</h3>' +
       '<p>Copies ' + what + ' into <b>/Workspace/Users/&lt;you&gt;/databricksedu/</b> as notebooks you can run and edit.</p>' + items;
     if (cfg.bar) h += '<div class="tip">👆 Fastest: in the <b>Save to workspace</b> bar above this window choose <b>' + esc(title) + '</b> and press the button.</div>';
-    h += '<p>' + (cfg.bar ? 'Or run' : 'Run') + ' this in a notebook cell:</p><div class="cmd"><code>' + esc(cmd) + '</code><button id="mcopy">copy</button></div>' +
+    if (cfg.web) h += '<p>In a Databricks notebook, install the package in the first cell:</p><div class="cmd"><code>' + esc(pip) +
+      '</code><button id="mcopy0">copy</button></div><p>then run this in the next cell:</p>';
+    else h += '<p>' + (cfg.bar ? 'Or run' : 'Run') + ' this in a notebook cell:</p>';
+    h += '<div class="cmd"><code>' + esc(cmd) + '</code><button id="mcopy">copy</button></div>' +
       '<button class="mclose" id="mclose">Close</button></div>';
     var modal = $('modal');
     modal.innerHTML = h; modal.classList.add('on');
     $('mcopy').onclick = function () { copyText(cmd, $('mcopy')); };
+    if ($('mcopy0')) $('mcopy0').onclick = function () { copyText(pip, $('mcopy0')); };
     $('mclose').onclick = function () { modal.classList.remove('on'); };
     modal.onclick = function (e) { if (e.target === modal) modal.classList.remove('on'); };
   }
@@ -330,7 +342,7 @@
     H = h; root.style.height = h + 'px';
     try { if (window.frameElement && window.frameElement.hasAttribute('data-dbe')) window.frameElement.style.height = (h + 4) + 'px'; } catch (e) { }
   }
-  if (START.page) $('bSize').style.display = 'none'; else setH(H);
+  if (cfg.page) $('bSize').style.display = 'none'; else setH(H);
   $('bSize').onclick = function () {
     var next = sizes.filter(function (s) { return s > H; })[0] || sizes[0];
     setH(next);
