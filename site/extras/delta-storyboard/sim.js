@@ -631,5 +631,7 @@
     render();
   }
 
-  window.DeltaSim = { mount: mount, reset: function () { mainEng.reset(); ui.asked = {}; ui.cmd = 'create'; }, boardExplorer: boardExplorer, Engine: Engine, openFile: openFile };
+  function runCmd(eng, id, params) { return CMDS.find(function (c) { return c.id === id; }).run(eng, params || {}); }
+  window.DeltaSim = { mount: mount, reset: function () { mainEng.reset(); ui.asked = {}; ui.cmd = 'create'; }, boardExplorer: boardExplorer, Engine: Engine, openFile: openFile,
+    explorerHtml: explorerHtml, wireExplorer: wireExplorer, run: runCmd };
 })();
