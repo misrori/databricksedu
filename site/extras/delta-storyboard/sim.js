@@ -13,7 +13,7 @@
   // ------------------------------------------------------------------ the engine
   function Engine() { this.reset(); }
   Engine.prototype.reset = function () {
-    this.v = -1; this.files = []; this.snaps = {}; this.live = []; this.dvOn = true; this.created = false; this.dvDir = null;
+    this.v = -1; this.files = []; this.snaps = {}; this.live = []; this.dvOn = true; this.created = false; this.dvDir = null; this.cdfOn = false; this.cdfFrom = null; this.cdcNo = 0; this.commits = {};
     this.nextId = 1; this.seq = 0; this.clock = Date.UTC(2026, 10, 20, 9, 0, 0); this.fileNo = 0; this.history = [];
   };
   Engine.prototype.uid = function (n) {
@@ -61,6 +61,13 @@
     this.files.push(f);
     return f;
   };
+  // change data feed: the changed rows with a _change_type, in _change_data/ (only when delta.enableChangeDataFeed = true)
+  Engine.prototype.writeCdc = function (rows) {
+    var name = 'cdc-' + pad(this.cdcNo++, 5) + '-' + this.uuid() + '.c000.snappy.parquet';
+    var f = { path: name, dir: '_change_data', type: 'cdc', rows: rows.map(function (r) { return r.slice(); }), size: 840 + rows.length * 40, version: this.v + 1, at: this.clock };
+    this.files.push(f);
+    return { cdc: { path: '_change_data/' + name, partitionValues: {}, size: f.size, dataChange: false } };
+  };
   Engine.prototype.addAction = function (f, dataChange, dv) {
     var a = { add: { path: f.path, partitionValues: {}, size: f.size, modificationTime: this.clock, dataChange: dataChange, stats: JSON.stringify(this.stats(f.rows)) } };
     if (dv) a.add.deletionVector = { storageType: 'u', pathOrInlineDv: dv.z85, offset: 1, sizeInBytes: dv.size, cardinality: dv.positions.length };
@@ -78,6 +85,7 @@
       readVersion: this.v > 0 ? this.v - 1 : undefined, isolationLevel: 'WriteSerializable', isBlindAppend: op === 'WRITE', operationMetrics: metrics || {},
       engineInfo: 'Databricks-Runtime/16.4.x', txnId: this.uid(8) + '-' + this.uid(4) + '-' + this.uid(4) } };
     if (info.commitInfo.readVersion === undefined) delete info.commitInfo.readVersion;
+    this.commits[this.v] = actions;
     var lines = [info].concat(actions);
     var text = lines.map(function (l) { return JSON.stringify(l); }).join('\n');
     this.files.push({ path: pad(this.v, 20) + '.json', dir: '_delta_log', type: 'json', lines: lines, size: text.length, version: this.v, at: this.clock });
@@ -101,6 +109,7 @@
   Engine.prototype.status = function (f) {
     if (f.deleted) return 'deleted';
     if (f.type === 'json' || f.type === 'checkpoint') return 'log';
+    if (f.type === 'cdc') return 'cdc';
     var inLive = this.live.some(function (e) { return e.path === f.path || e.dv === f.path; });
     return inLive ? 'live' : 'removed';
   };
@@ -120,15 +129,18 @@
 
   var CMDS = [
     { id: 'create', label: 'CREATE TABLE', ok: function (e) { return !e.created; },
-      sql: function (p, e) { return 'CREATE TABLE ' + TABLE + ' (\n  id       INT,\n  customer STRING,\n  amount   DOUBLE\n)\nTBLPROPERTIES (\'delta.enableDeletionVectors\' = ' + (e.dvOn ? 'true' : 'false') + ')'; },
-      py: function (p, e) { return 'from delta.tables import DeltaTable\n\n(DeltaTable.create(spark)\n   .tableName("' + TABLE + '")\n   .addColumn("id", "INT")\n   .addColumn("customer", "STRING")\n   .addColumn("amount", "DOUBLE")\n   .property("delta.enableDeletionVectors", "' + (e.dvOn ? 'true' : 'false') + '")\n   .execute())'; },
+      sql: function (p, e) { return 'CREATE TABLE ' + TABLE + ' (\n  id       INT,\n  customer STRING,\n  amount   DOUBLE\n)\nTBLPROPERTIES (\n  \'delta.enableDeletionVectors\' = ' + (e.dvOn ? 'true' : 'false') + ',\n  \'delta.enableChangeDataFeed\'  = ' + (e.cdfOn ? 'true' : 'false') + ')'; },
+      py: function (p, e) { return 'from delta.tables import DeltaTable\n\n(DeltaTable.create(spark)\n   .tableName("' + TABLE + '")\n   .addColumn("id", "INT")\n   .addColumn("customer", "STRING")\n   .addColumn("amount", "DOUBLE")\n   .property("delta.enableDeletionVectors", "' + (e.dvOn ? 'true' : 'false') + '")\n   .property("delta.enableChangeDataFeed", "' + (e.cdfOn ? 'true' : 'false') + '")\n   .execute())'; },
       run: function (e) {
         e.tick(); e.created = true;
         var schema = { type: 'struct', fields: [{ name: 'id', type: 'integer', nullable: true, metadata: {} }, { name: 'customer', type: 'string', nullable: true, metadata: {} }, { name: 'amount', type: 'double', nullable: true, metadata: {} }] };
-        var proto = e.dvOn ? { protocol: { minReaderVersion: 3, minWriterVersion: 7, readerFeatures: ['deletionVectors'], writerFeatures: ['deletionVectors'] } } : { protocol: { minReaderVersion: 1, minWriterVersion: 2 } };
-        e.commit('CREATE TABLE', { isManaged: 'true', description: null, partitionBy: '[]', properties: JSON.stringify({ 'delta.enableDeletionVectors': String(e.dvOn) }) }, [proto,
+        var proto = e.dvOn ? { protocol: { minReaderVersion: 3, minWriterVersion: 7, readerFeatures: ['deletionVectors'], writerFeatures: ['deletionVectors'].concat(e.cdfOn ? ['changeDataFeed'] : []) } }
+          : { protocol: { minReaderVersion: 1, minWriterVersion: e.cdfOn ? 4 : 2 } };
+        var conf = { 'delta.enableDeletionVectors': String(e.dvOn), 'delta.enableChangeDataFeed': String(e.cdfOn) };
+        if (e.cdfOn) e.cdfFrom = 0;
+        e.commit('CREATE TABLE', { isManaged: 'true', description: null, partitionBy: '[]', properties: JSON.stringify(conf) }, [proto,
           { metaData: { id: e.uid(8) + '-' + e.uid(4) + '-' + e.uid(4) + '-' + e.uid(4) + '-' + e.uid(12), format: { provider: 'parquet', options: {} }, schemaString: JSON.stringify(schema),
-            partitionColumns: [], configuration: { 'delta.enableDeletionVectors': String(e.dvOn) }, createdTime: e.clock } }]);
+            partitionColumns: [], configuration: conf, createdTime: e.clock } }]);
         return { title: 'An empty table: one folder, one JSON file', html: 'The table exists, but there is <b>no data file yet</b>. Version 0 is a single commit in <span class="mono">_delta_log</span> with the <b>protocol</b> (which features readers need) and the <b>metaData</b> (schema, properties). 👉 Click <span class="mono">00000000000000000000.json</span> in the explorer.', open: pad(0, 20) + '.json' };
       } },
     { id: 'insert', label: 'INSERT', ok: function (e) { return e.created; },
@@ -149,10 +161,15 @@
       sql: function () { return 'SELECT * FROM ' + TABLE + ' ORDER BY id'; },
       py: function () { return 'display(spark.table("' + TABLE + '").orderBy("id"))'; },
       run: function (e) {
-        var rows = e.liveRows();
-        var dvs = e.live.filter(function (x) { return x.dv; }).length;
-        return { title: 'Reading the current version', html: 'Spark read the log up to <b>version ' + e.v + '</b>, found ' + e.live.length + ' data file(s)' + (dvs ? ' and ' + dvs + ' deletion vector(s)' : '') + ', and read only those. Removed files in the folder are ignored.',
-          result: rowsTable(['id', 'customer', 'amount'], rows, rows.length + ' row(s) · version ' + e.v) };
+        var rows = e.liveRows(), withDv = e.live.filter(function (x) { return x.dv; }), hidden = 0;
+        withDv.forEach(function (x) { hidden += e.file(x.dv).positions.length; });
+        var steps = '<ol class="readsteps"><li>Read <span class="mono">_delta_log</span> up to <b>version ' + e.v + '</b>: the table is ' + e.live.length + ' Parquet file(s)' +
+          (withDv.length ? ', ' + withDv.length + ' of them with a deletion vector' : '') + '.</li><li>Read those Parquet files (removed files in the folder are ignored).</li>' +
+          (withDv.length ? '<li>Read the <span class="mono">.bin</span> file(s) in <span class="mono">' + e.dvDir + '/</span> and <b>skip ' + hidden + ' marked row(s)</b>. The bytes are still in the Parquet file, the reader just leaves them out.</li>' : '') +
+          '<li>Return ' + rows.length + ' row(s).</li></ol>';
+        return { title: 'How the SELECT read the table', html: steps + (withDv.length ? 'This is <b>merge-on-read</b>: cheap deletes, a little extra work on every read, until OPTIMIZE or <span class="mono">REORG TABLE … APPLY (PURGE)</span> rewrites the files.' : ''),
+          result: rowsTable(['id', 'customer', 'amount'], rows, rows.length + ' row(s) · version ' + e.v + (hidden ? ' · ' + hidden + ' row(s) hidden by deletion vectors' : '')),
+          hl: e.live.map(function (x) { return x.path; }).concat(withDv.map(function (x) { return x.dv; })) };
       } },
     { id: 'delete', label: 'DELETE', ok: function (e) { return e.created && liveIds(e).length > 0; }, params: { id: function (e) { return liveIds(e); } },
       sql: function (p) { return 'DELETE FROM ' + TABLE + '\nWHERE id = {{id}}'; },
@@ -178,17 +195,19 @@
           actions.push(e.removeAction(en, true));
           en.dv = dvFile.path;
           actions.push(e.addAction(f, true, dvFile));
+          if (e.cdfOn) actions.push(e.writeCdc([f.rows[target.pos].concat(['delete'])]));
           e.commit('DELETE', { predicate: '["(id = ' + id + ')"]' }, actions, { numDeletedRows: '1', numDeletionVectorsAdded: '1', numRemovedFiles: '0', numAddedFiles: '0' });
           return { title: 'A new folder: ' + dvFile.dir + '/', html: 'The Parquet file was <b>not touched</b>. Instead a new folder <span class="mono">' + dvFile.dir + '/</span> appeared in the table root with a small <b>deletion vector</b> file: it says “row ' + target.pos + ' of ' + f.path.slice(0, 10) + '… is deleted”. ' +
-            'The new commit in <span class="mono">_delta_log</span> points to it. Open both.',
+            'The new commit in <span class="mono">_delta_log</span> points to it. Open both.' + (e.cdfOn ? '<br>🔁 Change data feed is on, so the deleted row was also written to <span class="mono">_change_data/</span> with <b>_change_type = delete</b>.' : ''),
             open: dvFile.path, links: [['dv', '🧷 Deletion vectors explained']] };
         }
         var keep = f.rows.filter(function (r, i) { return i !== target.pos && old.indexOf(i) < 0; });
         actions.push(e.removeAction(en, true));
         e.live = e.live.filter(function (x) { return x !== en; });
         if (keep.length) { newFile = e.writeParquet(keep); e.live.push({ path: newFile.path, dv: null }); actions.push(e.addAction(newFile, true)); }
+        if (e.cdfOn) actions.push(e.writeCdc([f.rows[target.pos].concat(['delete'])]));
         e.commit('DELETE', { predicate: '["(id = ' + id + ')"]' }, actions, { numDeletedRows: '1', numRemovedFiles: '1', numAddedFiles: newFile ? '1' : '0', numCopiedRows: String(keep.length) });
-        return { title: 'Copy-on-write: a new file, the old one stays on disk', html: 'Delta copied the ' + keep.length + ' remaining row(s) into a new file and committed version ' + e.v + ' with a <b>remove</b> for the old file and an <b>add</b> for the new one. The old file is still in the folder: older versions need it.',
+        return { title: 'Copy-on-write: a new file, the old one stays on disk', html: 'Delta copied the ' + keep.length + ' remaining row(s) into a new file and committed version ' + e.v + ' with a <b>remove</b> for the old file and an <b>add</b> for the new one. The old file is still in the folder: older versions need it.' + (e.cdfOn ? '<br>🔁 Change data feed is on, so the deleted row was also written to <span class="mono">_change_data/</span> with <b>_change_type = delete</b>.' : ''),
           open: newFile ? newFile.path : pad(e.v, 20) + '.json', links: [['dv', '🧷 How deletion vectors avoid the rewrite']] };
       } },
     { id: 'update', label: 'UPDATE', ok: function (e) { return e.created && liveIds(e).length > 0; }, params: { id: function (e) { return liveIds(e); } },
@@ -207,14 +226,18 @@
           var dv = e.writeDv(f.path, old.concat([target.pos])), nf = e.writeParquet([changed]);
           actions.push(e.removeAction(en, true)); en.dv = dv.path; actions.push(e.addAction(f, true, dv));
           e.live.push({ path: nf.path, dv: null }); actions.push(e.addAction(nf, true));
+          var cdcU = e.cdfOn ? e.writeCdc([f.rows[target.pos].concat(['update_preimage']), changed.concat(['update_postimage'])]) : null;
+          if (cdcU) actions.push(cdcU);
           e.commit('UPDATE', { predicate: '["(id = ' + id + ')"]' }, actions, { numUpdatedRows: '1', numDeletionVectorsAdded: '1', numAddedFiles: '1', numRemovedFiles: '0' });
-          return { title: 'UPDATE = mark the old row + write the new one', html: 'With deletion vectors an update is a delete plus an insert: the old row is marked in a deletion vector, and the new version of the row goes into a <b>new small Parquet file</b>.', open: nf.path };
+          return { title: 'UPDATE = mark the old row + write the new one', html: 'With deletion vectors an update is a delete plus an insert: the old row is marked in a deletion vector, and the new version of the row goes into a <b>new small Parquet file</b>.' + (e.cdfOn ? '<br>🔁 Change data feed is on: a new file in <span class="mono">_change_data/</span> holds the row twice: <b>update_preimage</b> (before) and <b>update_postimage</b> (after).' : ''), open: cdcU ? cdcU.cdc.path.replace('_change_data/', '') : nf.path };
         }
         var rows = f.rows.filter(function (r, i) { return old.indexOf(i) < 0; }).map(function (r) { return r[0] === id ? changed : r; });
         actions.push(e.removeAction(en, true)); e.live = e.live.filter(function (x) { return x !== en; });
         var nf2 = e.writeParquet(rows); e.live.push({ path: nf2.path, dv: null }); actions.push(e.addAction(nf2, true));
+        var cdcU2 = e.cdfOn ? e.writeCdc([f.rows[target.pos].concat(['update_preimage']), changed.concat(['update_postimage'])]) : null;
+        if (cdcU2) actions.push(cdcU2);
         e.commit('UPDATE', { predicate: '["(id = ' + id + ')"]' }, actions, { numUpdatedRows: '1', numCopiedRows: String(rows.length - 1), numAddedFiles: '1', numRemovedFiles: '1' });
-        return { title: 'UPDATE rewrote the whole file', html: 'Without deletion vectors, changing one value means copying every row of that file into a new file (copy-on-write).', open: nf2.path };
+        return { title: 'UPDATE rewrote the whole file', html: 'Without deletion vectors, changing one value means copying every row of that file into a new file (copy-on-write).' + (e.cdfOn ? '<br>🔁 Change data feed is on: a new file in <span class="mono">_change_data/</span> holds the row twice: <b>update_preimage</b> (before) and <b>update_postimage</b> (after).' : ''), open: cdcU2 ? cdcU2.cdc.path.replace('_change_data/', '') : nf2.path };
       } },
     { id: 'history', label: 'DESCRIBE HISTORY', ok: function (e) { return e.created; },
       sql: function () { return 'DESCRIBE HISTORY ' + TABLE; },
@@ -269,13 +292,50 @@
           why: 'VACUUM deletes data files that the current version does not use and that are older than the retention period. The log keeps the history, but the files are gone, so those versions cannot be read any more.' };
       },
       run: function (e) {
-        var gone = e.files.filter(function (f) { return (f.type === 'parquet' || f.type === 'dv') && !f.deleted && e.status(f) === 'removed'; });
+        var gone = e.files.filter(function (f) { return !f.deleted && (((f.type === 'parquet' || f.type === 'dv') && e.status(f) === 'removed') || f.type === 'cdc'); });
         e.tick();
         e.commit('VACUUM START', { retentionCheckEnabled: false, defaultRetentionMillis: 604800000, specifiedRetentionMillis: 0 }, [], { numFilesToDelete: String(gone.length) });
         gone.forEach(function (f) { f.deleted = true; f.deletedIn = e.v; });
         e.commit('VACUUM END', { status: 'COMPLETED' }, [], { numDeletedFiles: String(gone.length), numVacuumedDirectories: '1' });
         return { title: gone.length ? gone.length + ' file(s) physically deleted' : 'Nothing to delete', html: gone.length ? 'Only files that the current version does not use were deleted. The JSON log is untouched, but older versions that needed those files can no longer be read. Try <b>VERSION AS OF</b> an old version.'
           : 'Every file in the folder is still used by the current version.', links: gone.length ? [] : [] };
+      } },
+    { id: 'changes', label: 'table_changes', ok: function (e) { return e.created; },
+      params: { v: function (e) { var a = []; if (e.cdfFrom == null) return [0]; for (var i = e.cdfFrom; i <= e.v; i++) a.push(i); return a; } },
+      sql: function () { return 'SELECT * FROM table_changes(\'' + TABLE + '\', {{v}})\nORDER BY _commit_version'; },
+      py: function () { return 'display(spark.read\n   .option("readChangeFeed", "true")\n   .option("startingVersion", {{v}})\n   .table("' + TABLE + '"))'; },
+      run: function (e, p) {
+        if (e.cdfFrom == null) return { error: 'Change data feed is not enabled on ' + TABLE + '.',
+          title: 'No change data feed yet', html: 'Turn it on first: run <b>CDF on / off</b> (or switch it on before CREATE TABLE). Then change some rows and come back.' };
+        var start = +p.v, rows = [], err = null;
+        for (var v = start; v <= e.v; v++) {
+          var acts = e.commits[v] || [], cdcs = acts.filter(function (a) { return a.cdc; });
+          var h = e.history.find(function (x) { return x.version === v; }), ts = h ? new Date(h.timestamp).toISOString().slice(0, 16).replace('T', ' ') : '';
+          if (cdcs.length) cdcs.forEach(function (a) {
+            var f = e.file(a.cdc.path.replace('_change_data/', ''));
+            if (f.deleted) err = a.cdc.path + ' (version ' + v + ') was deleted by VACUUM.';
+            else f.rows.forEach(function (r) { rows.push([r[0], r[1], r[2], r[3], v, ts]); });
+          });
+          else acts.forEach(function (a) {   // inserts need no change file: they come straight from the add actions
+            if (a.add && a.add.dataChange && !a.add.deletionVector) e.file(a.add.path).rows.forEach(function (r) { rows.push([r[0], r[1], r[2], 'insert', v, ts]); });
+          });
+        }
+        if (err) return { error: err, title: 'That change data is gone', html: 'VACUUM also cleans up old files in <span class="mono">_change_data/</span>, so the feed only goes back as far as the retention period.' };
+        return { title: 'What changed, row by row', html: 'Every row has a <b>_change_type</b>: <b>insert</b>, <b>delete</b>, <b>update_preimage</b> (the row before the UPDATE) or <b>update_postimage</b> (the row after it). ' +
+          'Inserts are read from the normal data files; deletes and updates come from <span class="mono">_change_data/</span>. OPTIMIZE never shows up: it moves data, it does not change it.',
+          result: rowsTable(['id', 'customer', 'amount', '_change_type', '_commit_version', '_commit_timestamp'], rows, rows.length + ' change(s) since version ' + start) };
+      } },
+    { id: 'cdf', label: 'CDF on / off', ok: function (e) { return e.created; },
+      sql: function (p, e) { return 'ALTER TABLE ' + TABLE + '\nSET TBLPROPERTIES (\'delta.enableChangeDataFeed\' = ' + (!e.cdfOn) + ')'; },
+      py: function (p, e) { return 'spark.sql(\n  "ALTER TABLE ' + TABLE + ' "\n  "SET TBLPROPERTIES (\'delta.enableChangeDataFeed\' = ' + (!e.cdfOn) + ')")'; },
+      run: function (e) {
+        e.tick(); e.cdfOn = !e.cdfOn;
+        var meta = e.files.filter(function (f) { return f.type === 'json' && f.lines && f.lines.some(function (l) { return l.metaData; }); }).pop().lines.filter(function (l) { return l.metaData; })[0];
+        var m2 = JSON.parse(JSON.stringify(meta)); m2.metaData.configuration['delta.enableChangeDataFeed'] = String(e.cdfOn);
+        e.commit('SET TBLPROPERTIES', { properties: JSON.stringify({ 'delta.enableChangeDataFeed': String(e.cdfOn) }) }, [m2]);
+        if (e.cdfOn && e.cdfFrom == null) e.cdfFrom = e.v;
+        return { title: 'Change data feed is ' + (e.cdfOn ? 'ON' : 'OFF'), html: e.cdfOn ? 'From now on DELETE, UPDATE and MERGE also write the changed rows into a new folder, <span class="mono">_change_data/</span>. Try an <b>UPDATE</b>, open the new file, then run <b>table_changes</b>.'
+          : 'New changes are no longer written to <span class="mono">_change_data/</span>.' };
       } },
     { id: 'alter', label: 'DV on / off', ok: function (e) { return e.created; },
       sql: function (p, e) { return 'ALTER TABLE ' + TABLE + '\nSET TBLPROPERTIES (\'delta.enableDeletionVectors\' = ' + (!e.dvOn) + ')'; },
@@ -367,6 +427,15 @@
           '<p>It belongs to: <span class="mono">' + esc(f.target) + '</span> · ' + fmtSize(f.size) + '</p><div class="bits">' + bits + '</div><p>Red = deleted rows (by position in that file): <b>' + f.positions.join(', ') + '</b></p>' +
           '<table class="dt"><tr><th>#</th><th>id</th><th>customer</th><th>amount</th></tr>' + target.rows.map(function (r, i) { return '<tr class="' + (f.positions.indexOf(i) >= 0 ? 'strike' : '') + '"><td class="pos">' + i + '</td><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td>' + r[2].toFixed(1) + '</td></tr>'; }).join('') + '</table>';
       }]);
+    } else if (f.type === 'cdc') {
+      tabs.push(['Changed rows', function () {
+        var colr = { 'delete': '#c5221f', 'update_preimage': '#b06000', 'update_postimage': '#137333', 'insert': '#1a56c4' };
+        return (st === 'deleted' ? banner : '') + '<div class="banner info">🔁 <b>_change_data/</b> appears when change data feed is on. Each file holds the rows that one DELETE, UPDATE or MERGE changed, ' +
+          'with an extra column <b>_change_type</b>. An UPDATE gives two rows: the <b>pre-image</b> (before) and the <b>post-image</b> (after). Version ' + f.version + '.</div>' +
+          '<table class="dt"><tr><th>id</th><th>customer</th><th>amount</th><th>_change_type</th></tr>' +
+          f.rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td>' + r[2].toFixed(1) + '</td><td><b style="color:' + (colr[r[3]] || '#333') + '">' + r[3] + '</b></td></tr>'; }).join('') + '</table>' +
+          '<p style="font-size:13.5px;color:#555">Read it with <span class="mono">SELECT * FROM table_changes(\'' + TABLE + '\', ' + f.version + ')</span>, not by opening these files: inserts are not in here, they come from the normal data files.</p>';
+      }]);
     } else if (f.type === 'checkpoint') {
       tabs.push(['Checkpoint', function () {
         return '<div class="banner info">Every 10 commits Delta writes a <b>checkpoint</b>: the whole table state up to that version in one Parquet file. Readers start from the latest checkpoint instead of replaying every JSON file. <span class="mono">_last_checkpoint</span> points at it.</div>' +
@@ -387,10 +456,10 @@
     opts = opts || {};
     var logs = eng.files.filter(function (f) { return f.dir === '_delta_log'; }).sort(function (a, b) { return a.path < b.path ? -1 : 1; });
     var data = eng.files.filter(function (f) { return f.dir === '' && !(opts.hideDeleted && f.deleted); });
-    var dvs = eng.files.filter(function (f) { return f.type === 'dv'; });
+    var dvs = eng.files.filter(function (f) { return f.type === 'dv'; }), cdcs = eng.files.filter(function (f) { return f.type === 'cdc'; });
     function row(f, indent) {
-      var st = eng.status(f), icon = f.type === 'json' ? '📄' : f.type === 'dv' ? '🧷' : f.type === 'checkpoint' ? '🗜️' : '📦';
-      var chip = st === 'live' ? '<span class="chip live">v' + eng.v + '</span>' : st === 'removed' ? '<span class="chip rm">removed v' + f.removedIn + '</span>' : st === 'deleted' ? '<span class="chip del">deleted</span>' : '<span class="chip log">v' + f.version + '</span>';
+      var st = eng.status(f), icon = f.type === 'json' ? '📄' : f.type === 'dv' ? '🧷' : f.type === 'checkpoint' ? '🗜️' : f.type === 'cdc' ? '🔁' : '📦';
+      var chip = st === 'cdc' ? '<span class="chip cdc">v' + f.version + '</span>' : st === 'live' ? '<span class="chip live">v' + eng.v + '</span>' : st === 'removed' ? '<span class="chip rm">removed v' + f.removedIn + '</span>' : st === 'deleted' ? '<span class="chip del">deleted</span>' : '<span class="chip log">v' + f.version + '</span>';
       var cls = (st === 'deleted' ? 'gone ' : '') + (st === 'removed' ? 'old ' : '') + (opts.fresh && opts.fresh.indexOf(f.path) >= 0 ? 'fresh ' : '') + (opts.hl && opts.hl.indexOf(f.path) >= 0 ? 'hl ' : '');
       return '<div class="xr ' + cls + '" data-p="' + esc(f.path) + '" style="padding-left:' + (10 + indent * 20) + 'px"><span class="xi">' + icon + '</span><span class="xn">' + esc(f.path) + '</span>' +
         chip + '<span class="xs">' + (st === 'deleted' ? '—' : fmtSize(f.size)) + '</span><span class="xt">' + new Date(f.at).toISOString().slice(11, 16) + '</span></div>';
@@ -400,6 +469,8 @@
       (open ? logs.map(function (f) { return row(f, 1); }).join('') : '') +
       (dvs.length ? '<div class="xr dir" style="padding-left:10px;cursor:default"><span class="xi">📂</span><span class="xn">' + eng.dvDir + '/</span><span class="chip dvc">deletion vectors</span><span class="xs"></span><span class="xt"></span></div>' +
         dvs.map(function (f) { return row(f, 1); }).join('') : '') +
+      (cdcs.length ? '<div class="xr dir" style="padding-left:10px;cursor:default"><span class="xi">📂</span><span class="xn">_change_data/</span><span class="chip cdc">change data feed</span><span class="xs"></span><span class="xt"></span></div>' +
+        cdcs.map(function (f) { return row(f, 1); }).join('') : '') +
       data.filter(function (f) { return f.type !== 'dv'; }).map(function (f) { return row(f, 0); }).join('') +
       (!eng.files.length ? '<div class="xempty">(empty: run CREATE TABLE)</div>' : '');
   }
@@ -420,7 +491,7 @@
     el.innerHTML = '<div class="sim">' +
       '<div class="left"><div class="cmds" id="cmds"></div>' +
       '<div class="cell"><div class="ch">notebook cell<span class="lang"><button data-l="sql">SQL</button><button data-l="py">Python</button></span></div><pre id="code"></pre>' +
-      '<div class="run"><button class="btn acc" id="run">▶ Run</button><label class="toggle" title="delta.enableDeletionVectors"><input type="checkbox" id="dvT"><span class="sw"></span>deletion vectors</label><span class="stat" id="stat">simulated · nothing really runs</span></div></div>' +
+      '<div class="run"><button class="btn acc" id="run">▶ Run</button><label class="toggle" title="delta.enableDeletionVectors"><input type="checkbox" id="dvT"><span class="sw"></span>deletion vectors</label><label class="toggle" title="delta.enableChangeDataFeed"><input type="checkbox" id="cdfT"><span class="sw"></span>change data feed</label><span class="stat" id="stat">simulated · nothing really runs</span></div></div>' +
       '<div class="narr sk thin" id="narr"><h5>Start here</h5>Pick <b>CREATE TABLE</b> and press <b>Run</b>. Then insert rows, delete one, optimize, vacuum, and travel in time. Click any file on the right to open it.</div>' +
       '<div class="result" id="result" style="display:none"></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="simReset">↺ Start over</button><label class="toggle"><input type="checkbox" id="askT" checked><span class="sw"></span>ask me before key steps</label></div></div>' +
@@ -435,6 +506,8 @@
       el.querySelectorAll('#code select').forEach(function (s) { s.onchange = function () { ui.values[s.dataset.p] = s.value; }; });
       el.querySelectorAll('.lang button').forEach(function (b) { b.classList.toggle('on', b.dataset.l === ui.lang); b.onclick = function () { ui.lang = b.dataset.l; draw(); }; });
       $('#dvT').checked = mainEng.dvOn; $('#dvT').disabled = mainEng.created;
+      $('#cdfT').checked = mainEng.cdfOn; $('#cdfT').disabled = mainEng.created;
+      $('#cdfT').parentNode.title = mainEng.created ? 'Use the “CDF on / off” command (ALTER TABLE) once the table exists' : 'delta.enableChangeDataFeed for the new table';
       $('#dvT').parentNode.title = mainEng.created ? 'Use the “DV on / off” command (ALTER TABLE) once the table exists' : 'delta.enableDeletionVectors for the new table';
       $('#run').disabled = !c.ok(mainEng);
       $('#xplore').innerHTML = explorerHtml(mainEng, { logOpen: ui.logOpen, fresh: ui.fresh, hl: ui.hl });
@@ -445,6 +518,7 @@
         '<table class="dt"><tr><th>id</th><th>customer</th><th>amount</th></tr>' + rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td>' + r[2].toFixed(1) + '</td></tr>'; }).join('') + '</table>' : '<div class="xempty">0 rows</div>';
     }
     $('#dvT').onchange = function () { if (!mainEng.created) { mainEng.dvOn = $('#dvT').checked; draw(); } };
+    $('#cdfT').onchange = function () { if (!mainEng.created) { mainEng.cdfOn = $('#cdfT').checked; draw(); } };
     $('#simReset').onclick = function () { mainEng.reset(); ui.cmd = 'create'; ui.values = {}; ui.fresh = []; ui.hl = []; $('#result').style.display = 'none';
       $('#narr').innerHTML = '<h5>Start here</h5>Pick <b>CREATE TABLE</b> and press <b>Run</b>.'; draw(); };
     $('#run').onclick = function () {
@@ -485,7 +559,8 @@
     if (demo) return demo;
     demo = new Engine();
     var byId = function (id) { return CMDS.find(function (c) { return c.id === id; }); };
-    byId('create').run(demo); byId('insert').run(demo); byId('insert').run(demo); byId('delete').run(demo, { id: 2 });
+    demo.cdfOn = true;
+    byId('create').run(demo); byId('insert').run(demo); byId('insert').run(demo); byId('delete').run(demo, { id: 2 }); byId('update').run(demo, { id: 4 });
     return demo;
   }
   var BUCKET_TREE = [
@@ -511,6 +586,11 @@
               var lk = key + '_delta_log/', lo = openDirs[lk] !== false;
               html += '<div class="xr dir" data-d="' + lk + '" data-def="1" style="padding-left:' + (pl + 18) + 'px"><span class="xi">' + (lo ? '📂' : '📁') + '</span><span class="xn">_delta_log/</span><span class="chip log">transaction log</span><span class="xs"></span><span class="xt">folder</span></div>';
               if (lo) logs.forEach(function (f) { html += '<div class="xr" data-p="' + f.path + '" style="padding-left:' + (pl + 36) + 'px"><span class="xi">📄</span><span class="xn">' + f.path + '</span><span class="chip log">v' + f.version + '</span><span class="xs">' + fmtSize(f.size) + '</span><span class="xt">JSON</span></div>'; });
+              var cds = eng.files.filter(function (f) { return f.type === 'cdc'; });
+              if (cds.length) {
+                html += '<div class="xr dir" style="padding-left:' + (pl + 18) + 'px;cursor:default"><span class="xi">📂</span><span class="xn">_change_data/</span><span class="chip cdc">change data feed</span><span class="xs"></span><span class="xt">folder</span></div>';
+                cds.forEach(function (f) { html += '<div class="xr" data-p="' + f.path + '" style="padding-left:' + (pl + 36) + 'px"><span class="xi">🔁</span><span class="xn">' + f.path + '</span><span class="chip cdc">v' + f.version + '</span><span class="xs">' + fmtSize(f.size) + '</span><span class="xt">Parquet</span></div>'; });
+              }
               if (dvs.length) {
                 html += '<div class="xr dir" style="padding-left:' + (pl + 18) + 'px;cursor:default"><span class="xi">📂</span><span class="xn">' + eng.dvDir + '/</span><span class="chip dvc">deletion vectors</span><span class="xs"></span><span class="xt">folder</span></div>';
                 dvs.forEach(function (f) { html += '<div class="xr" data-p="' + f.path + '" style="padding-left:' + (pl + 36) + 'px"><span class="xi">🧷</span><span class="xn">' + f.path + '</span><span class="chip live">current</span><span class="xs">' + fmtSize(f.size) + '</span><span class="xt">DV</span></div>'; });

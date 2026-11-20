@@ -383,3 +383,12 @@ table.dt td.pos { color: #8d99a8; width: 30px; }
 #liveset .file { font-family: "SFMono-Regular", Menlo, Consolas, monospace; border: 1px solid #9ad3a8; border-radius: 6px; }
 body.winopen #dbe-back { display: none; }
 .chip.dvc { background: #fff4d6; color: #8a5a00; }
+.chip.cdc { background: #f3e8fd; color: #7b3fb3; }
+.readsteps { margin: 6px 0 6px 0; padding-left: 22px; font-size: 15.5px; }
+.readsteps li { margin: 2px 0; }
+/* the simulator grows and the window scrolls, instead of squeezing its parts */
+.sim { height: auto; align-items: start; }
+.sim .left > *, .sim .right > * { flex-shrink: 0; }
+.sim .xp { max-height: 470px; }
+.tblnow { max-height: none; }
+.result { max-height: 260px; }

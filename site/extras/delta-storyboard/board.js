@@ -481,6 +481,22 @@
         };
       },
       function (el) {
+        var box = h(title('Reading it with <em>SQL</em>', 'Nothing changes in your query. You write a normal SELECT; Delta does the extra step for you.') +
+          '<div class="cols"><div><div class="cell"><div class="ch">notebook cell · SQL</div><pre><span class="kw">SELECT</span> * <span class="kw">FROM</span> main.sales.orders</pre></div>' +
+          '<button class="btn acc" id="rdgo" style="margin-top:12px">▶ Watch the read</button></div><div class="logstack" id="rdsteps"></div></div>');
+        el.appendChild(box);
+        var st = [['🧾', '<b>Read _delta_log</b>: the current version is part-00007.parquet, and its add action has a <span class="mono">deletionVector</span> pointer.'],
+          ['📦', '<b>Read part-00007.parquet</b>: all rows, including the deleted ones. They are still in the file.'],
+          ['🧷', '<b>Read the .bin file</b> the pointer names: rows 57, 91 and 133 are deleted.'],
+          ['✂️', '<b>Skip those rows</b> and return the rest. You never see them.'],
+          ['🧹', 'Later, <span class="mono">OPTIMIZE</span> or <span class="mono">REORG TABLE main.sales.orders APPLY (PURGE)</span> rewrites the file without them, and the vectors are no longer needed.']];
+        box.querySelector('#rdgo').onclick = function () {
+          var out = box.querySelector('#rdsteps'); out.innerHTML = '';
+          st.forEach(function (x, i) { var d = document.createElement('div'); d.className = 'commit'; d.style.animationDelay = (i * 0.6) + 's'; d.innerHTML = x[0] + ' ' + x[1]; out.appendChild(d); });
+        };
+        box.querySelector('#rdgo').click();
+      },
+      function (el) {
         el.appendChild(h(title('Reading with a deletion vector', 'Merge-on-read: the reader loads the file and its vector, and skips the marked rows.') +
           '<div class="cols"><div class="card sk"><div class="mono" style="font-size:14px">📦 part-00007.parquet  +  🧷 deletion vector</div>' + gridHtml(160, [57, 91, 133]) +
           '<div class="note" style="margin-top:8px">3 rows hidden, 0 bytes rewritten</div></div><div>' + list([
@@ -496,6 +512,55 @@
           options: ['Appending new daily files', 'Frequent deletes and updates that touch a few rows in big files', 'Reading the whole table once a day', 'CREATE TABLE statements'],
           correct: 1, why: 'Deletion vectors avoid rewriting big files for a few changed rows. Appends never rewrite files anyway.' }));
         var go = h('<div style="margin-top:16px"><button class="btn acc">🧪 Try DELETE with deletion vectors on and off in the simulator →</button></div>');
+        go.querySelector('button').onclick = function () { openScene('sim'); };
+        el.appendChild(go);
+      }
+    ]
+  });
+
+  // 7b ── change data feed
+  function cdfTable(stepped) {
+    return '<table class="tbl" style="max-width:720px"><tr><th>id</th><th>customer</th><th>amount</th><th>_change_type</th><th>_commit_version</th></tr>' +
+      [[4, 'Dee', '8.0', 'insert', 2, '#1a56c4'], [2, 'Bob', '12.0', 'delete', 3, '#c5221f'], [5, 'Eve', '41.0', 'update_preimage', 4, '#b06000'], [5, 'Eve', '99.0', 'update_postimage', 4, '#137333']]
+        .map(function (r, i) { return '<tr style="opacity:0;animation:rise .45s ' + (stepped ? i * 0.5 : 0) + 's forwards"><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td><b style="color:' + r[5] + '">' + r[3] + '</b></td><td>' + r[4] + '</td></tr>'; }).join('') + '</table>';
+  }
+  SCENES.push({
+    id: 'cdf', icon: '🔁', title: 'Change data feed: before and after', sub: 'What changed in the table, row by row: pre-image and post-image.',
+    thumb: '<span class="tag" style="color:#b06000">update_preimage</span><span style="font-size:26px;margin:0 6px">→</span><span class="tag" style="color:#137333">update_postimage</span>',
+    steps: [
+      function (el) {
+        el.appendChild(h(title('“What changed since yesterday?”', 'The table shows how things are <b>now</b>. Downstream jobs often need the <b>changes</b>: which rows were added, deleted or updated, and what they looked like before.') +
+          '<div class="cols"><div>' + list(['Turn it on per table: <span class="mono">delta.enableChangeDataFeed = true</span>.',
+            'From then on every DELETE, UPDATE and MERGE also writes the changed rows to a new folder: <span class="mono">_change_data/</span>.',
+            'Each changed row gets an extra column, <b>_change_type</b>.',
+            'You read it with <span class="mono">table_changes(…)</span>, not by opening the files.']) + '</div><div class="folder"><div class="fh">s3://acme-lakehouse-prod/sales/orders/</div>' +
+          '<div class="file"><span class="ic">📁</span>_delta_log/<span class="tg">commits</span></div><div class="file new"><span class="ic">📂</span>_change_data/<span class="tg">change data feed</span></div>' +
+          '<div class="file new" style="padding-left:30px"><span class="ic">🔁</span>cdc-00000-….c000.snappy.parquet<span class="tg">v3 · DELETE</span></div>' +
+          '<div class="file new" style="padding-left:30px"><span class="ic">🔁</span>cdc-00001-….c000.snappy.parquet<span class="tg">v4 · UPDATE</span></div>' +
+          '<div class="file"><span class="ic">📦</span>part-00000-….snappy.parquet<span class="tg">data</span></div></div></div>'));
+      },
+      function (el) {
+        el.appendChild(h(title('An UPDATE leaves <em>two</em> rows', 'Eve’s amount goes from 41 to 99. The change data file keeps both versions of her row.') +
+          '<div class="cols"><div><div class="cell"><div class="ch">notebook cell · SQL</div><pre><span class="kw">UPDATE</span> main.sales.orders\n<span class="kw">SET</span> amount = <span class="nu">99</span> <span class="kw">WHERE</span> id = <span class="nu">5</span></pre></div>' +
+          '<table class="tbl" style="margin-top:14px"><tr><th>id</th><th>customer</th><th>amount</th><th>_change_type</th></tr>' +
+          '<tr style="opacity:0;animation:rise .5s .4s forwards"><td>5</td><td>Eve</td><td>41.0</td><td><b style="color:#b06000">update_preimage</b></td></tr>' +
+          '<tr style="opacity:0;animation:rise .5s 1.1s forwards"><td>5</td><td>Eve</td><td>99.0</td><td><b style="color:#137333">update_postimage</b></td></tr></table></div><div>' +
+          list(['<b>pre-image</b>: the row as it was <b>before</b> the update.', '<b>post-image</b>: the row <b>after</b> the update.',
+            'A DELETE leaves one row with <b>delete</b>.', 'An INSERT is simply <b>insert</b>, read from the normal data files (no extra file needed).']) + '</div></div>'));
+      },
+      function (el) {
+        el.appendChild(h(title('Reading the changes with <em>SQL</em>', 'Ask for everything that changed since a version. Delta adds three columns.') +
+          '<div class="cell" style="max-width:720px"><div class="ch">notebook cell · SQL</div><pre><span class="kw">SELECT</span> * <span class="kw">FROM</span> table_changes(<span class="st">\'main.sales.orders\'</span>, <span class="nu">2</span>)</pre></div>' +
+          '<div style="margin-top:14px">' + cdfTable(true) + '</div><div class="callout sk thin" style="max-width:720px">Columns added: <b>_change_type</b>, <b>_commit_version</b>, <b>_commit_timestamp</b>. ' +
+          'Python: <span class="mono">spark.read.option("readChangeFeed", "true").option("startingVersion", 2).table("main.sales.orders")</span>. ' +
+          'Old change files are removed by VACUUM like other old files.</div>'));
+      },
+      function (el) {
+        el.appendChild(h(title('Quick check')));
+        el.appendChild(quiz({ id: 'cdf', q: 'Change data feed is on. You run <span class="mono">UPDATE … SET amount = 99 WHERE id = 5</span>. How many rows for id 5 does <span class="mono">table_changes</span> return for that version?',
+          options: ['One: the new row', 'Two: update_preimage (before) and update_postimage (after)', 'None: updates are not tracked', 'Three: delete, insert and update'],
+          correct: 1, why: 'An update is recorded as a pair: the pre-image with the old values and the post-image with the new values, both with the same commit version.' }));
+        var go = h('<div style="margin-top:16px"><button class="btn acc">🧪 Try it: switch on “change data feed” in the simulator, run an UPDATE, then table_changes →</button></div>');
         go.querySelector('button').onclick = function () { openScene('sim'); };
         el.appendChild(go);
       }
@@ -525,13 +590,13 @@
   // x, y, w: position on the canvas. Frames can be dragged; positions are remembered per viewer.
   var LAYOUT = {
     beach: [60, 90, 320], bucket: [470, 90, 320], explorer: [880, 40, 600], uc: [470, 600, 320],
-    delta: [1580, 90, 330], sim: [1580, 600, 560], parquet: [2240, 90, 320], dv: [2240, 600, 320], recap: [2240, 1060, 320]
+    delta: [1580, 90, 330], sim: [1580, 600, 560], parquet: [2240, 90, 320], dv: [2240, 600, 320], cdf: [1580, 1060, 340], recap: [2240, 1060, 320]
   };
   var EDGES = [
     ['beach', 'bucket', 'the beach is object storage'], ['bucket', 'explorer', 'look inside a bucket'],
     ['explorer', 'delta', 'sales/orders/ is a Delta table'], ['bucket', 'uc', 'Unity Catalog governs the buckets'],
     ['uc', 'explorer', 'main.sales.orders → this folder'], ['delta', 'sim', 'build one yourself'],
-    ['delta', 'parquet', 'the data files are Parquet'], ['sim', 'dv', 'DELETE with deletion vectors'], ['parquet', 'dv', ''], ['dv', 'recap', '']
+    ['delta', 'parquet', 'the data files are Parquet'], ['sim', 'dv', 'DELETE with deletion vectors'], ['parquet', 'dv', ''], ['sim', 'cdf', 'what changed? pre- and post-image'], ['dv', 'cdf', ''], ['cdf', 'recap', '']
   ];
   var pos = {};
   try { pos = JSON.parse(localStorage.getItem('dlsb-pos') || '{}') || {}; } catch (e) { pos = {}; }
