@@ -12,6 +12,8 @@ SITE_URL = "https://misrori.github.io/databricksedu/"
 
 # Hand-made extras that live on the website (site/extras/); the app links to them.
 EXTRAS = [
+    {"id": "delta-storyboard", "icon": "🗺️", "title": "Delta Lake storyboard",
+     "desc": "An interactive board: beach vs pool, buckets, Unity Catalog, and a Delta table simulator.", "module": "delta-table-anatomy"},
     {"id": "databricks-story", "icon": "🎨", "title": "The Databricks story",
      "desc": "An animated sketch story: from one machine to a data + AI platform.", "module": "databricks-story"},
     {"id": "broadcast-hash-join", "icon": "🎬", "title": "Broadcast hash join",
