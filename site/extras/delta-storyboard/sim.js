@@ -13,7 +13,7 @@
   // ------------------------------------------------------------------ the engine
   function Engine() { this.reset(); }
   Engine.prototype.reset = function () {
-    this.v = -1; this.files = []; this.snaps = {}; this.live = []; this.dvOn = true; this.created = false;
+    this.v = -1; this.files = []; this.snaps = {}; this.live = []; this.dvOn = true; this.created = false; this.dvDir = null;
     this.nextId = 1; this.seq = 0; this.clock = Date.UTC(2026, 10, 20, 9, 0, 0); this.fileNo = 0; this.history = [];
   };
   Engine.prototype.uid = function (n) {
@@ -25,6 +25,12 @@
       s += '0123456789abcdef'[((r ^ (r >>> 14)) >>> 0) % 16];
     }
     return s;
+  };
+  Engine.prototype.uuid = function () { return this.uid(8) + '-' + this.uid(4) + '-' + this.uid(4) + '-' + this.uid(4) + '-' + this.uid(12); };
+  Engine.prototype.code = function (n, abc) {
+    var h = this.uid(n * 2), out = '';
+    for (var i = 0; i < n; i++) out += abc[parseInt(h.substr(i * 2, 2), 16) % abc.length];
+    return out;
   };
   Engine.prototype.tick = function () { this.clock += 3 * 60 * 1000 + (this.seq % 47) * 1000; return this.clock; };
   Engine.prototype.file = function (p) { return this.files.find(function (f) { return f.path === p; }); };
@@ -48,19 +54,21 @@
     return f;
   };
   Engine.prototype.writeDv = function (target, positions) {
-    var name = 'deletion_vector_' + this.uid(8) + '-' + this.uid(4) + '-' + this.uid(4) + '.bin';
-    var f = { path: name, dir: '', type: 'dv', target: target, positions: positions.slice().sort(function (a, b) { return a - b; }), size: 34 + positions.length * 2, version: this.v + 1, at: this.clock };
+    var letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    this.dvDir = this.dvDir || this.code(2, letters);
+    var name = 'deletion_vector_' + this.uuid() + '.bin';
+    var f = { path: name, dir: this.dvDir, type: 'dv', z85: this.dvDir + this.code(20, letters + '0123456789.-:+=^!/*?&<>()[]{}@%$#'), target: target, positions: positions.slice().sort(function (a, b) { return a - b; }), size: 34 + positions.length * 2, version: this.v + 1, at: this.clock };
     this.files.push(f);
     return f;
   };
   Engine.prototype.addAction = function (f, dataChange, dv) {
     var a = { add: { path: f.path, partitionValues: {}, size: f.size, modificationTime: this.clock, dataChange: dataChange, stats: JSON.stringify(this.stats(f.rows)) } };
-    if (dv) a.add.deletionVector = { storageType: 'u', pathOrInlineDv: dv.path.replace('deletion_vector_', '').replace('.bin', '').slice(0, 20), offset: 1, sizeInBytes: dv.size, cardinality: dv.positions.length };
+    if (dv) a.add.deletionVector = { storageType: 'u', pathOrInlineDv: dv.z85, offset: 1, sizeInBytes: dv.size, cardinality: dv.positions.length };
     return a;
   };
   Engine.prototype.removeAction = function (e, dataChange) {
     var f = this.file(e.path), a = { remove: { path: e.path, deletionTimestamp: this.clock, dataChange: dataChange, extendedFileMetadata: true, partitionValues: {}, size: f.size } };
-    if (e.dv) { var d = this.file(e.dv); a.remove.deletionVector = { storageType: 'u', pathOrInlineDv: d.path.replace('deletion_vector_', '').replace('.bin', '').slice(0, 20), offset: 1, sizeInBytes: d.size, cardinality: d.positions.length }; }
+    if (e.dv) { var d = this.file(e.dv); a.remove.deletionVector = { storageType: 'u', pathOrInlineDv: d.z85, offset: 1, sizeInBytes: d.size, cardinality: d.positions.length }; }
     return a;
   };
   Engine.prototype.commit = function (op, params, actions, metrics) {
@@ -171,7 +179,8 @@
           en.dv = dvFile.path;
           actions.push(e.addAction(f, true, dvFile));
           e.commit('DELETE', { predicate: '["(id = ' + id + ')"]' }, actions, { numDeletedRows: '1', numDeletionVectorsAdded: '1', numRemovedFiles: '0', numAddedFiles: '0' });
-          return { title: 'Deletion vector: the Parquet file was not touched', html: 'Delta wrote <span class="mono">' + dvFile.path.slice(0, 24) + '….bin</span> marking row position <b>' + target.pos + '</b> of ' + f.path.slice(0, 10) + '… as deleted. In the log, the same file is <b>removed and re-added</b> with a <span class="mono">deletionVector</span> pointer.',
+          return { title: 'A new folder: ' + dvFile.dir + '/', html: 'The Parquet file was <b>not touched</b>. Instead a new folder <span class="mono">' + dvFile.dir + '/</span> appeared in the table root with a small <b>deletion vector</b> file: it says “row ' + target.pos + ' of ' + f.path.slice(0, 10) + '… is deleted”. ' +
+            'The new commit in <span class="mono">_delta_log</span> points to it. Open both.',
             open: dvFile.path, links: [['dv', '🧷 Deletion vectors explained']] };
         }
         var keep = f.rows.filter(function (r, i) { return i !== target.pos && old.indexOf(i) < 0; });
@@ -353,8 +362,9 @@
       tabs.push(['Deletion vector', function () {
         var bits = '';
         for (var i = 0; i < target.rows.length; i++) bits += '<span class="' + (f.positions.indexOf(i) >= 0 ? 'x' : '') + '" title="row ' + i + '">' + i + '</span>';
-        return banner + '<div class="banner info">A deletion vector is a compressed bitmap (RoaringBitmap) of <b>row positions</b> to skip in one Parquet file. ' + fmtSize(f.size) + ' instead of rewriting the data.</div>' +
-          '<p>Target file: <span class="mono">' + esc(f.target) + '</span></p><div class="bits">' + bits + '</div><p>Red = deleted row positions: <b>{' + f.positions.join(', ') + '}</b></p>' +
+        return banner + '<div class="banner info">📂 <b>' + f.dir + '/</b> appeared in the table folder when the first row was deleted. It holds the <b>deletion vectors</b>: small files that say which rows of a Parquet file are deleted. ' +
+          'The Parquet file itself is not changed. The folder name is just a short random name; the log points to the file.</div>' +
+          '<p>It belongs to: <span class="mono">' + esc(f.target) + '</span> · ' + fmtSize(f.size) + '</p><div class="bits">' + bits + '</div><p>Red = deleted rows (by position in that file): <b>' + f.positions.join(', ') + '</b></p>' +
           '<table class="dt"><tr><th>#</th><th>id</th><th>customer</th><th>amount</th></tr>' + target.rows.map(function (r, i) { return '<tr class="' + (f.positions.indexOf(i) >= 0 ? 'strike' : '') + '"><td class="pos">' + i + '</td><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td>' + r[2].toFixed(1) + '</td></tr>'; }).join('') + '</table>';
       }]);
     } else if (f.type === 'checkpoint') {
@@ -377,6 +387,7 @@
     opts = opts || {};
     var logs = eng.files.filter(function (f) { return f.dir === '_delta_log'; }).sort(function (a, b) { return a.path < b.path ? -1 : 1; });
     var data = eng.files.filter(function (f) { return f.dir === '' && !(opts.hideDeleted && f.deleted); });
+    var dvs = eng.files.filter(function (f) { return f.type === 'dv'; });
     function row(f, indent) {
       var st = eng.status(f), icon = f.type === 'json' ? '📄' : f.type === 'dv' ? '🧷' : f.type === 'checkpoint' ? '🗜️' : '📦';
       var chip = st === 'live' ? '<span class="chip live">v' + eng.v + '</span>' : st === 'removed' ? '<span class="chip rm">removed v' + f.removedIn + '</span>' : st === 'deleted' ? '<span class="chip del">deleted</span>' : '<span class="chip log">v' + f.version + '</span>';
@@ -386,7 +397,10 @@
     }
     var open = opts.logOpen !== false;
     return '<div class="xr dir" data-dir="_delta_log" style="padding-left:10px"><span class="xi">' + (open ? '📂' : '📁') + '</span><span class="xn">_delta_log/</span><span class="chip log">' + logs.length + ' objects</span><span class="xs"></span><span class="xt"></span></div>' +
-      (open ? logs.map(function (f) { return row(f, 1); }).join('') : '') + data.map(function (f) { return row(f, 0); }).join('') +
+      (open ? logs.map(function (f) { return row(f, 1); }).join('') : '') +
+      (dvs.length ? '<div class="xr dir" style="padding-left:10px;cursor:default"><span class="xi">📂</span><span class="xn">' + eng.dvDir + '/</span><span class="chip dvc">deletion vectors</span><span class="xs"></span><span class="xt"></span></div>' +
+        dvs.map(function (f) { return row(f, 1); }).join('') : '') +
+      data.filter(function (f) { return f.type !== 'dv'; }).map(function (f) { return row(f, 0); }).join('') +
       (!eng.files.length ? '<div class="xempty">(empty: run CREATE TABLE)</div>' : '');
   }
   function explorerHtml(eng, opts) {
@@ -493,10 +507,14 @@
             var op = openDirs[key];
             html += '<div class="xr dir delta" data-d="' + key + '" style="padding-left:' + pl + 'px"><span class="xi">' + (op ? '📂' : '📁') + '</span><span class="xn">' + n.name + '</span><span class="chip live">🔺 Delta table</span><span class="xs"></span><span class="xt">folder</span></div>';
             if (op) {
-              var logs = eng.files.filter(function (f) { return f.dir === '_delta_log'; }), data = eng.files.filter(function (f) { return f.dir === ''; });
+              var logs = eng.files.filter(function (f) { return f.dir === '_delta_log'; }), data = eng.files.filter(function (f) { return f.dir === ''; }), dvs = eng.files.filter(function (f) { return f.type === 'dv'; });
               var lk = key + '_delta_log/', lo = openDirs[lk] !== false;
               html += '<div class="xr dir" data-d="' + lk + '" data-def="1" style="padding-left:' + (pl + 18) + 'px"><span class="xi">' + (lo ? '📂' : '📁') + '</span><span class="xn">_delta_log/</span><span class="chip log">transaction log</span><span class="xs"></span><span class="xt">folder</span></div>';
               if (lo) logs.forEach(function (f) { html += '<div class="xr" data-p="' + f.path + '" style="padding-left:' + (pl + 36) + 'px"><span class="xi">📄</span><span class="xn">' + f.path + '</span><span class="chip log">v' + f.version + '</span><span class="xs">' + fmtSize(f.size) + '</span><span class="xt">JSON</span></div>'; });
+              if (dvs.length) {
+                html += '<div class="xr dir" style="padding-left:' + (pl + 18) + 'px;cursor:default"><span class="xi">📂</span><span class="xn">' + eng.dvDir + '/</span><span class="chip dvc">deletion vectors</span><span class="xs"></span><span class="xt">folder</span></div>';
+                dvs.forEach(function (f) { html += '<div class="xr" data-p="' + f.path + '" style="padding-left:' + (pl + 36) + 'px"><span class="xi">🧷</span><span class="xn">' + f.path + '</span><span class="chip live">current</span><span class="xs">' + fmtSize(f.size) + '</span><span class="xt">DV</span></div>'; });
+              }
               data.forEach(function (f) {
                 var st = eng.status(f);
                 html += '<div class="xr ' + (st === 'removed' ? 'old' : '') + '" data-p="' + f.path + '" style="padding-left:' + (pl + 18) + 'px"><span class="xi">' + (f.type === 'dv' ? '🧷' : '📦') + '</span><span class="xn">' + f.path + '</span>' +

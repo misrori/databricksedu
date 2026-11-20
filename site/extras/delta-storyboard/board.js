@@ -466,13 +466,18 @@
           '<div class="cols"><div class="bigfile"><b class="mono">part-00007.parquet · 1 GB · untouched</b>' + gridHtml(160, []) +
           '<div id="dvout" style="margin-top:10px;min-height:40px"></div></div><div>' + list([
             '+Writes a few bytes instead of 1 GB: deletes and updates get much faster.',
-            'The log re-adds the same file with a <span class="mono">deletionVector</span> pointer.',
+            'It lands in a small <b>new folder</b> in the table root (a short random name like <span class="mono">fJ/</span>), next to <span class="mono">_delta_log/</span>.',
+            'The new commit in the log points to it.',
             'Row positions are stored as a compressed bitmap (RoaringBitmap).',
             'Small vectors can even live inline in the log.']) + '<button class="btn acc" id="dvb">▶ DELETE … WHERE id = 57</button></div></div>');
         el.appendChild(box);
         box.querySelector('#dvb').onclick = function () {
           box.querySelectorAll('.rowsgrid i')[57].classList.add('x');
-          box.querySelector('#dvout').innerHTML = '<span class="dvchip">🧷 deletion_vector_4f1c….bin · 34 bytes · rows {57}</span>';
+          box.querySelector('#dvout').innerHTML = '<div class="folder" style="max-width:520px"><div class="fh">s3://acme-lakehouse-prod/sales/orders/</div>' +
+            '<div class="file"><span class="ic">📁</span>_delta_log/<span class="tg">+1 commit</span></div>' +
+            '<div class="file new"><span class="ic">📂</span>fJ/<span class="tg">new folder</span></div>' +
+            '<div class="file new" style="padding-left:30px"><span class="ic">🧷</span>deletion_vector_4f1c….bin<span class="tg">34 B · row 57 deleted</span></div>' +
+            '<div class="file"><span class="ic">📦</span>part-00007.parquet<span class="tg">1 GB · unchanged</span></div></div>';
         };
       },
       function (el) {

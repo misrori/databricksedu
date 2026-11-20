@@ -382,3 +382,4 @@ table.dt td.pos { color: #8d99a8; width: 30px; }
 .commit { font-family: "SFMono-Regular", Menlo, Consolas, monospace; border-width: 1px; border-radius: 8px; }
 #liveset .file { font-family: "SFMono-Regular", Menlo, Consolas, monospace; border: 1px solid #9ad3a8; border-radius: 6px; }
 body.winopen #dbe-back { display: none; }
+.chip.dvc { background: #fff4d6; color: #8a5a00; }
