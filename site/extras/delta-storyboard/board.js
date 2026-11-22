@@ -287,6 +287,30 @@
     ]
   });
 
+  // 3b ── storage path decoder (filled in by paths.js)
+  SCENES.push({ id: 'paths', icon: '🧭', title: 'Storage path decoder', big: true,
+    sub: 'Paste a table or volume storage location from Databricks: every layer of the path explained, and a simulated bucket to walk through.',
+    thumb: '<span class="tag" style="font-size:12.5px">s3://…/&lt;metastore-id&gt;/tables/&lt;table-id&gt;</span><span style="font-size:46px;margin-left:8px">🧭</span>',
+    steps: [
+      function (el) {
+        el.appendChild(h(title('Decode a <em>real</em> storage path', 'Copy the storage location of a table or volume from Catalog Explorer (or <span class="mono">DESCRIBE DETAIL</span>), paste it, press Explain.')));
+        var box = document.createElement('div'); el.appendChild(box);
+        if (window.PathSim) window.PathSim.mount(box, { open: openScene }); else box.textContent = 'Path decoder not loaded.';
+      },
+      function (el) {
+        el.appendChild(h(title('Five patterns <em>to recognise</em>', 'Unity Catalog uses the closest managed location: schema, then catalog, then metastore. IDs, never names.')));
+        var box = document.createElement('div'); el.appendChild(box);
+        if (window.PathSim) window.PathSim.cheat(box);
+        el.appendChild(h('<div class="callout sk thin">Why IDs and not names? Renaming a table, a schema or a catalog is then only a change in Unity Catalog: not a single file has to move.</div>'));
+      },
+      function (el) {
+        el.appendChild(h(title('Quick check')));
+        el.appendChild(quiz({ id: 'paths', q: 'A path ends in <span class="mono">…/__unitystorage/schemas/0f3a…/tables/4b8f…</span>. What does that tell you?',
+          options: ['It is an external table in a folder someone chose', 'A managed table whose schema has its own managed location', 'A managed table stored at the metastore root', 'A file inside a volume'],
+          correct: 1, why: '__unitystorage/schemas/&lt;schema-id&gt; is the schema-level managed location. Without it the table would sit under the catalog’s location, or the metastore root (&lt;metastore-id&gt;/tables/…).' }));
+      }
+    ] });
+
   // 4 ── what is a delta table
   function deltaFolder(files, logs) {
     return '<div class="folder"><div class="fh">s3://acme-lakehouse-prod/sales/orders/</div>' +
@@ -589,13 +613,13 @@
   // ------------------------------------------------------------------ board: a pannable, zoomable canvas
   // x, y, w: position on the canvas. Frames can be dragged; positions are remembered per viewer.
   var LAYOUT = {
-    beach: [60, 90, 320], bucket: [470, 90, 320], explorer: [880, 40, 600], uc: [470, 600, 320],
+    beach: [60, 90, 320], bucket: [470, 90, 320], explorer: [880, 40, 600], uc: [470, 600, 320], paths: [470, 1060, 320],
     delta: [1580, 90, 330], sim: [1580, 600, 560], parquet: [2240, 90, 320], dv: [2240, 600, 320], cdf: [1580, 1060, 340], recap: [2240, 1060, 320]
   };
   var EDGES = [
     ['beach', 'bucket', 'the beach is object storage'], ['bucket', 'explorer', 'look inside a bucket'],
     ['explorer', 'delta', 'sales/orders/ is a Delta table'], ['bucket', 'uc', 'Unity Catalog governs the buckets'],
-    ['uc', 'explorer', 'main.sales.orders → this folder'], ['delta', 'sim', 'build one yourself'],
+    ['uc', 'explorer', 'main.sales.orders → this folder'], ['uc', 'paths', 'decode a real storage path'], ['delta', 'sim', 'build one yourself'],
     ['delta', 'parquet', 'the data files are Parquet'], ['sim', 'dv', 'DELETE with deletion vectors'], ['parquet', 'dv', ''], ['sim', 'cdf', 'what changed? pre- and post-image'], ['dv', 'cdf', ''], ['cdf', 'recap', '']
   ];
   var pos = {};
@@ -761,7 +785,7 @@
   $('#bPresent').onclick = function () { open(0, 0); };
   $('#bReset').onclick = function () {
     store = { visited: {}, answers: {} }; persist(); updateScore(); seen = {};
-    if (window.DeltaSim) window.DeltaSim.reset();
+    if (window.DeltaSim) window.DeltaSim.reset(); if (window.PathSim) window.PathSim.reset();
     document.querySelectorAll('#canvas .frame').forEach(function (f) { f.classList.remove('visited'); });
   };
 
