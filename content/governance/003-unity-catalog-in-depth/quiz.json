@@ -1,0 +1,22 @@
+[
+  {"q": "Your company has workspaces in two Azure regions. How many Unity Catalog metastores should it have?",
+   "o": ["One for the whole account", "One per region, and each workspace attaches to the metastore in its region", "One per workspace", "One per catalog"],
+   "c": 1,
+   "e": "A metastore is regional. Create one per region where you run workspaces; every workspace attaches to exactly one, in its own region."},
+  {"q": "A metastore has a managed location, catalog `prod` has one, and schema `prod.sales` has none. Where do the files of a new managed table `prod.sales.orders` go?",
+   "o": ["The metastore location", "A random location chosen at query time", "The schema must get a location first, otherwise the CREATE fails", "The catalog location of `prod`"],
+   "c": 3,
+   "e": "The most specific managed location wins: schema, then catalog, then metastore. The schema has none, so the catalog location is used."},
+  {"q": "How does a serverless notebook get access to the files of a managed table it reads?",
+   "o": ["Unity Catalog checks the grants and vends a short-lived credential scoped to the table's path", "The user's own cloud keys are stored in the notebook", "The compute has permanent read access to the whole bucket", "The workspace admin copies the files to DBFS"],
+   "c": 0,
+   "e": "This is credential vending. After the privilege check, Unity Catalog uses the storage credential to create a temporary, down-scoped token for that path only."},
+  {"q": "Catalog `prod` is set to ISOLATED and bound only to the production workspace. An analyst with `USE CATALOG` and `SELECT` on `prod` opens the dev workspace. What happens?",
+   "o": ["The query works because the grants exist", "The query works but returns no rows", "`prod` cannot be reached from the dev workspace, whatever the grants say", "The query is redirected to the dev catalog"],
+   "c": 2,
+   "e": "Workspace binding is checked before grants. From a workspace the catalog is not bound to, nobody can use it."},
+  {"q": "Which statement about the admin roles is correct?",
+   "o": ["A workspace admin can create metastores", "An account admin works in the account console, creating metastores and managing account users and groups", "A metastore admin automatically reads every table without any grant", "There is only one admin role in Databricks"],
+   "c": 1,
+   "e": "Account admins manage the account: identities, workspaces and metastores. Metastore admins manage the metastore's securables and grants, and workspace admins manage one workspace."}
+]

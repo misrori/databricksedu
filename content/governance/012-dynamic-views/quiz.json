@@ -1,0 +1,22 @@
+[
+  {"q": "Sam has `SELECT` on the dynamic view `hr_secure.employees_v`, but no grant on the base table `hr.employees`. What happens when Sam queries the view?",
+   "o": ["It fails, because Sam cannot read the base table", "It works: the view reads the base table with its owner's privileges, and the identity functions answer for Sam", "It works, but the identity functions answer for the view owner", "It works only on a dedicated cluster"],
+   "c": 1,
+   "e": "Unity Catalog checks the reader against the view and the view owner against the base tables. Functions like `is_account_group_member()` are still evaluated for the reader."},
+  {"q": "A steward grants `hr_analysts` `SELECT` on the whole `prod.hr` schema, which holds both `employees` and the dynamic view over it. What is the problem?",
+   "o": ["Nothing, the view still filters every query", "The view stops working", "Analysts can query `employees` directly and skip the filter and the masks", "Schema grants do not cover views"],
+   "c": 2,
+   "e": "A dynamic view only protects data if readers have no other path to the base table. Keep base tables and secure views in separate schemas."},
+  {"q": "Why should an entitlement check in a dynamic view use `EXISTS` rather than a `JOIN` to the entitlement table?",
+   "o": ["`JOIN` is not allowed in views", "`EXISTS` is evaluated for the view owner", "`JOIN` cannot call `current_user()`", "A `JOIN` returns one copy of a row per matching rule, so duplicate or overlapping rules multiply rows"],
+   "c": 3,
+   "e": "`EXISTS` only asks whether at least one rule matches, so each base row appears at most once."},
+  {"q": "Which function should a dynamic view use to check group membership on Unity Catalog data?",
+   "o": ["`is_account_group_member('g')`", "`is_member('g')`", "`current_user() = 'g'`", "`current_recipient('g')`"],
+   "c": 0,
+   "e": "`is_account_group_member()` checks account-level groups. `is_member()` only sees workspace-local groups, and `current_recipient()` is for Delta Sharing recipients."},
+  {"q": "In which case is a dynamic view still a better choice than a row filter on the table?",
+   "o": ["Every query on the table must be filtered, with no exceptions", "You need to share a filtered, aggregated subset with a partner through Delta Sharing", "You want to avoid creating any extra objects", "The same rule must apply to 400 tables"],
+   "c": 1,
+   "e": "Tables with row filters cannot be shared directly, and a view can also join and aggregate. Filtering every query is a row filter's job, and many tables call for ABAC."}
+]

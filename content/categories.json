@@ -10,7 +10,7 @@
   {"id": "analytics", "title": "Analytics & AI/BI", "icon": "📊",
    "desc": "SQL warehouses, dashboards, Genie spaces and metric views: getting answers out of the lakehouse."},
   {"id": "governance", "title": "Governance & Security", "icon": "🛡️",
-   "desc": "Unity Catalog privileges, row filters and column masks, Delta Sharing, lineage and system tables."},
+   "desc": "Unity Catalog for admins: account and workspaces, the namespace, users, groups and service principals, privileges, dynamic views, row filters, column masks, ABAC, Delta Sharing, lineage and system tables."},
   {"id": "recaps", "title": "Course Recaps", "icon": "🎒",
    "desc": "8-10 minute recaps of the Databricks Academy instructor-led courses, one per course day."},
   {"id": "exam-prep", "title": "Exam Prep", "icon": "🎓", "cta": true,

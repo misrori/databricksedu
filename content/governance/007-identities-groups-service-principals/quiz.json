@@ -1,0 +1,22 @@
+[
+  {"q": "Where are users, groups and service principals created in a workspace with identity federation?",
+   "o": ["In each workspace separately", "In the account, then assigned to workspaces", "In the Unity Catalog metastore", "In the cloud provider's IAM console"],
+   "c": 1,
+   "e": "Identities are managed once at the account level and assigned to the workspaces that need them, so one person is one principal everywhere."},
+  {"q": "Why can you not run `GRANT SELECT ... TO finance` when `finance` is a legacy workspace-local group?",
+   "o": ["Workspace-local groups cannot receive Unity Catalog grants", "Groups can never receive grants, only users can", "The group name needs backticks", "Only service principals can get SELECT"],
+   "c": 0,
+   "e": "Unity Catalog serves many workspaces, so it only knows account-level groups. Convert the group to an account group."},
+  {"q": "A nightly Lakeflow Job loads production data. Which setup is best?",
+   "o": ["Run as the data engineer who built it", "Run as a workspace admin", "Use a personal access token of a team lead", "Run as a service principal that authenticates with OAuth"],
+   "c": 3,
+   "e": "A service principal outlives any person, holds only the grants the job needs, and OAuth M2M gives short-lived tokens instead of a long-lived personal token."},
+  {"q": "What does `is_account_group_member('data-engineers')` return for a user who is in `team-a`, which is itself a member of `data-engineers`?",
+   "o": ["false, only direct membership counts", "An error, because nested groups are not supported", "true, because indirect membership counts", "NULL"],
+   "c": 2,
+   "e": "The function returns true for direct or indirect members of an account group, so nested membership counts."},
+  {"q": "A user is assigned to a workspace but cannot open the SQL editor. What is the most likely cause?",
+   "o": ["They lack the Databricks SQL access entitlement", "They are not a metastore admin", "They have no USE CATALOG grant", "They are not in the `account users` group"],
+   "c": 0,
+   "e": "Entitlements decide which parts of a workspace a principal may use. The SQL editor and warehouses need Databricks SQL access."}
+]

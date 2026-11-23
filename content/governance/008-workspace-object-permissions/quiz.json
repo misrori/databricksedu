@@ -1,0 +1,22 @@
+[
+  {"q": "You give a colleague CAN MANAGE on a notebook that reads `prod.hr.employees`. They run it and get an insufficient privileges error. Why?",
+   "o": ["CAN MANAGE does not allow running cells", "The notebook must be moved to their home folder", "Workspace object permissions do not grant Unity Catalog privileges; they need USE CATALOG, USE SCHEMA and SELECT", "Only the notebook owner can query tables"],
+   "c": 2,
+   "e": "Object permissions decide what you can open or run. The query runs as the colleague, so their own Unity Catalog privileges are checked."},
+  {"q": "An on-call engineer must re-run and cancel runs of a Lakeflow Job, but must not change its settings or permissions. Which level fits?",
+   "o": ["CAN MANAGE RUN", "CAN VIEW", "CAN MANAGE", "IS OWNER"],
+   "c": 0,
+   "e": "CAN MANAGE RUN adds run now, cancel and run logs on top of CAN VIEW, without editing or changing permissions."},
+  {"q": "A dashboard is published with **Share data permissions**. A viewer has CAN VIEW on it but no grants on the underlying tables. What happens?",
+   "o": ["The viewer gets a permission error", "The viewer sees the data, because queries run with the publisher's data permissions", "The viewer sees only column names", "The dashboard asks the viewer to request access"],
+   "c": 1,
+   "e": "With shared data permissions, queries use the publisher's credentials (or a chosen service principal). That is why it should be used only for data every viewer may see."},
+  {"q": "Which compute access mode cannot read Unity Catalog tables?",
+   "o": ["Standard", "Dedicated assigned to a user", "Dedicated assigned to a group", "No isolation shared"],
+   "c": 3,
+   "e": "No isolation shared is a legacy mode without user isolation, and it has no Unity Catalog access. Use Standard or Dedicated."},
+  {"q": "You grant `finance-analysts` CAN RUN on the folder `/Workspace/Shared/finance`. What happens to a notebook created in that folder next week?",
+   "o": ["Nothing until you grant on the notebook too", "It inherits CAN RUN for finance-analysts", "It gets CAN MANAGE for finance-analysts", "Only workspace admins can open it"],
+   "c": 1,
+   "e": "Objects inherit the permissions of their folder, including objects created later. Grant on team folders, not on single notebooks."}
+]

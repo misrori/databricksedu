@@ -24,7 +24,7 @@ Works on Databricks serverless and classic compute. No dependencies beyond what 
 | 🤖 Machine Learning | ML lifecycle, MLflow tracking, feature engineering, tuning, models in Unity Catalog, serving, monitoring |
 | ✨ Generative AI | How LLMs work, prompting, embeddings and Vector Search, chunking, RAG, agents, evaluation, AI Functions |
 | 📊 Analytics & AI/BI | SQL warehouses, AI/BI dashboards, Genie spaces, metric views |
-| 🛡️ Governance & Security | Unity Catalog privileges, row filters and column masks, Delta Sharing, lineage and system tables |
+| 🛡️ Governance & Security | Unity Catalog in depth, the three-level namespace, users, groups and service principals, workspace object permissions, privileges, dynamic views, row filters, column masks, ABAC policies, Delta Sharing, lineage and system tables |
 | 🎒 Course Recaps | 8-10 minute recaps of the Databricks Academy Data Engineering, Advanced Data Engineering and Apache Spark Programming courses |
 | 🎓 Exam Prep | Study guides for the Databricks certifications |
 | 🧪 Demo Data | Seeded generators for six related-table datasets with primary and foreign keys |
@@ -49,7 +49,7 @@ databricksedu.save("data-engineering")         # a whole track, or save("all")
 
 Everything is also published as a website: **https://misrori.github.io/databricksedu/**. It has the same app
 (slides, notes, quizzes), the hand-made extras (the Delta Lake storyboard with a
-storage path decoder and a Delta table simulator, the Spark optimization storyboard, the Databricks story, a broadcast
+storage path decoder and a Delta table simulator, the Spark optimization storyboard, the Governance storyboard with an access lab, the Databricks story, a broadcast
 hash join animation, an OPTIMIZE & VACUUM deck) and the Markdown of every module under `markdown/<module id>.md`. The website is rebuilt from `main` by
 `.github/workflows/pages.yml` (`python tools/build.py && python tools/site.py`).
 

@@ -1,0 +1,22 @@
+[
+  {"q": "A mask on `salary` returns NULL for analysts. An analyst runs `SELECT count(*) FROM employees WHERE salary > 100000`. What do they get?",
+   "o": ["The real count, because filters run on the stored data", "An error, because the column is masked", "0, because the filter sees the masked NULL values", "NULL"],
+   "c": 2,
+   "e": "The mask is applied as each row is read. The WHERE clause runs afterwards and `NULL > 100000` is never TRUE, so no row passes."},
+  {"q": "Which statement attaches a mask whose decision depends on the `country` column of the same row?",
+   "o": ["`ALTER TABLE t ALTER COLUMN email SET MASK fn USING COLUMNS (country)`", "`ALTER TABLE t SET MASK fn ON (email, country)`", "`ALTER TABLE t ALTER COLUMN email SET MASK fn(country)`", "`CREATE MASK fn ON t.email WHERE country`"],
+   "c": 0,
+   "e": "The masked column is always the first argument. `USING COLUMNS` passes extra columns or constants as the next arguments, in order."},
+  {"q": "Two tables have their `email` columns masked with the same `sha2(email, 256)` function. For an analyst, what happens when they join the two tables on `email`?",
+   "o": ["The join returns no rows", "The join fails because masked columns cannot be joined", "The join works, because the same input always gives the same hash", "The join compares the real emails behind the scenes"],
+   "c": 2,
+   "e": "Joins run on masked values. A deterministic hash maps equal emails to equal hashes, so masked-to-masked joins still match. A join to an unmasked table would match nothing."},
+  {"q": "A salary mask rounds values down to the nearest 10,000. What is true for analysts?",
+   "o": ["Averages are exact, only single values are hidden", "Averages and `> x` filters change, because they run on the rounded values", "The mask only applies to `SELECT *` queries", "Aggregates bypass the mask"],
+   "c": 1,
+   "e": "Generalization keeps a rough value, but every aggregate and filter in the query works on the rounded numbers, so results are approximate."},
+  {"q": "You want to delete a mask function that is still attached to a column. What should you do first?",
+   "o": ["Nothing, dropping the function removes the mask too", "Run `REFRESH TABLE`", "Revoke `EXECUTE` on the function", "`ALTER TABLE t ALTER COLUMN c DROP MASK`"],
+   "c": 3,
+   "e": "If the function is dropped while a mask still points to it, the table cannot be read. Remove the mask first, then drop the function."}
+]

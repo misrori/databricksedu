@@ -1,0 +1,22 @@
+[
+  {"q": "A column mask policy on catalog `prod` uses `MATCH COLUMNS has_tag_value('pii', 'email') AS e`. The tag `pii = email` is set on the **table** `prod.crm.leads`, not on any column. What happens when an analyst queries `leads`?",
+   "o": ["Every column of `leads` is masked", "Only columns named `email` are masked", "Nothing is masked: `MATCH COLUMNS` only sees tags set directly on columns", "The query fails because the tag is on the wrong level"],
+   "c": 2,
+   "e": "Table, schema and catalog tags are inherited by tables for `WHEN` conditions, but never by columns. `MATCH COLUMNS` checks column tags only."},
+  {"q": "What does a governance admin need to create a column mask policy `ON CATALOG prod`?",
+   "o": ["`MANAGE` on (or ownership of) the catalog and `EXECUTE` on the mask function", "`SELECT` on every table in the catalog", "Account admin rights", "`APPLY TAG` on every column the policy will match"],
+   "c": 0,
+   "e": "Creating, replacing or dropping a policy needs `MANAGE` or ownership on the securable the policy is attached to, plus `EXECUTE` on the UDF. Account admins define governed tags, not policies."},
+  {"q": "A column is masked by an ABAC policy, and the table owner also runs `ALTER TABLE … ALTER COLUMN … SET MASK` with a different function. What does a user covered by the policy get?",
+   "o": ["The table-level mask wins", "The ABAC mask wins", "Both masks are applied one after the other", "An error: two distinct masks resolve for the same column"],
+   "c": 3,
+   "e": "Only one distinct mask may resolve per column and user. A table-level mask plus a different ABAC mask on the same target blocks access with an error."},
+  {"q": "A data engineer creates a new table in `prod` and tags its `ssn` column with the governed tag `pii = ssn`. A catalog policy masks `pii = ssn` columns. What else must happen before analysts see masked values?",
+   "o": ["The admin must re-run `CREATE POLICY`", "Nothing: the policy is evaluated at query time and matches the new column", "The engineer must attach the mask with `SET MASK`", "The table must be added to the policy's table list"],
+   "c": 1,
+   "e": "Policies act like future grants. Unity Catalog evaluates them at every query, so any new table in scope with a matching tag is covered (a tag change can take a few minutes)."},
+  {"q": "An admin deletes a governed tag that an active ABAC policy still references. What happens to queries in the policy's scope?",
+   "o": ["They return unmasked data until the policy is dropped", "They are masked with NULL", "They fail, because ABAC fails closed", "Nothing changes, the policy keeps a copy of the tag"],
+   "c": 2,
+   "e": "ABAC refuses access when it cannot enforce a policy safely. Queries against the policy's scope fail until the tag is restored or the policy is changed."}
+]

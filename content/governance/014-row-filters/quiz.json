@@ -1,0 +1,22 @@
+[
+  {"q": "A row filter function returns NULL for a row. What happens to that row?",
+   "o": ["It is kept, because only FALSE removes rows", "It is filtered out: only rows where the function returns TRUE are kept", "The query fails with an error", "It is returned with all columns set to NULL"],
+   "c": 1,
+   "e": "If the function returns FALSE or NULL, the row is filtered out. Watch out for comparisons with NULL values or NULL constants."},
+  {"q": "Which statement attaches one generic function to a table and passes the country to allow as a constant?",
+   "o": ["`ALTER TABLE t ADD ROW FILTER fn WHERE country = 'HU'`", "`ALTER TABLE t ALTER COLUMN country SET ROW FILTER fn('HU')`", "`CREATE ROW FILTER fn ON t (country = 'HU')`", "`ALTER TABLE t SET ROW FILTER fn ON (country, 'HU')`"],
+   "c": 3,
+   "e": "The `ON` list can mix column names and constant literals (STRING, numeric, BOOLEAN, INTERVAL or NULL). They map to the function's parameters in order."},
+  {"q": "A row filter looks readers up in `prod.sec.dept_access`. Analysts have `SELECT` on the filtered table, but no grant on `dept_access`. What happens when they query the table?",
+   "o": ["It works: the filter reads the mapping table with the function owner's rights, while `is_account_group_member()` answers for the analyst", "It fails, because analysts cannot read `dept_access`", "It returns every row, because the lookup is skipped", "It returns no rows until analysts get `SELECT` on `dept_access`"],
+   "c": 0,
+   "e": "Filters run with definer's rights, except identity functions such as `session_user()` and `is_account_group_member()`, which run as the invoker."},
+  {"q": "You are not the owner of `employees`. Which privileges let you set a row filter on it with function `fn`?",
+   "o": ["`SELECT` on the table only", "`MODIFY` on the table and `SELECT` on the function", "`MANAGE` and `SELECT` on the table, plus `EXECUTE` on `fn`", "`ALL PRIVILEGES` on the catalog only"],
+   "c": 2,
+   "e": "On an existing table you must be the owner or have both `MANAGE` and `SELECT`, and you need `EXECUTE` on the function (plus `USE CATALOG` and `USE SCHEMA`)."},
+  {"q": "A table has a row filter that keeps only `HU` rows for you. You `INSERT` a row with `country = 'DE'`. What happens?",
+   "o": ["The insert fails, because the filter rejects the row", "The row is written, but your queries do not return it", "The row is written with `country` changed to `HU`", "The row is silently discarded"],
+   "c": 1,
+   "e": "A row filter is applied when rows are read. It is not a constraint, so it does not block writes. Use a CHECK constraint to restrict what can be written."}
+]

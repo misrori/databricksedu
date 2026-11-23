@@ -1,0 +1,22 @@
+[
+  {"q": "Your session runs `USE CATALOG dev; USE SCHEMA hr;`. Which table does `SELECT * FROM sales.orders` read?",
+   "o": ["`dev.sales.orders`", "`dev.hr.orders`", "`hr.sales.orders`", "`sales.orders` in `hive_metastore`"],
+   "c": 0,
+   "e": "A two-part name is `schema.object`. Only the catalog is taken from the session, so it becomes `dev.sales.orders`."},
+  {"q": "Which name needs backticks?",
+   "o": ["`prod.hr.employees`", "`prod_eu.hr.employees_2026`", "A catalog called `finance-eu`", "A table called `Employees`"],
+   "c": 2,
+   "e": "Special characters such as hyphens must be quoted: `` `finance-eu`.reporting.revenue ``. Capital letters are simply stored as lowercase."},
+  {"q": "Where do you look to find a table called `customers` in any catalog of the metastore?",
+   "o": ["`information_schema.tables` of the current catalog", "`hive_metastore.default`", "`SHOW TABLES` in the current schema", "`system.information_schema.tables`"],
+   "c": 3,
+   "e": "Each catalog's `information_schema` covers only that catalog. `system.information_schema` spans every catalog you can see."},
+  {"q": "What is the path of file `a.csv` in folder `2026` of volume `raw` in schema `sales` of catalog `prod`?",
+   "o": ["`dbfs:/prod/sales/raw/2026/a.csv`", "`/Volumes/prod/sales/raw/2026/a.csv`", "`/Volumes/raw/2026/a.csv`", "`prod.sales.raw/2026/a.csv`"],
+   "c": 1,
+   "e": "Volume paths repeat the three Unity Catalog levels after `/Volumes`, then any folders inside the volume."},
+  {"q": "A company uses one catalog per environment (`dev`, `prod`). What is the main advantage?",
+   "o": ["It needs no schemas", "Business units can each own a separate bucket", "The same code runs in both environments by changing only the catalog name, and `prod` can be bound to the production workspace", "Analysts automatically see only gold tables"],
+   "c": 2,
+   "e": "Per-environment catalogs keep schema and table names identical across environments, and the catalog is the unit that can be bound to workspaces."}
+]
