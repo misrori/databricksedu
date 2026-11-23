@@ -3,6 +3,13 @@
   'use strict';
   var S = window.Storyboard, h = S.h, title = S.title, list = S.list, esc = S.esc;
   var SC = window.GOV_SCENES = [];
+
+  // a lab scene: one step that mounts window.GovLabs[key]
+  function labScene(id, key, title, sub, tags) {
+    return { id: id, icon: '🧪', title: title, sub: sub,
+      thumb: '<span style="font-size:40px">🧪</span>' + tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join(''),
+      steps: [function (el) { var d = document.createElement('div'); el.appendChild(d); window.GovLabs[key].mount(d); }] };
+  }
   function sql(txt) {
     return '<pre class="code">' + esc(txt).replace(/(--[^\n]*)/g, '<span class="cm">$1</span>')
       .replace(/\b(SELECT|FROM|WHERE|GRANT|REVOKE|ON|TO|USE|CATALOG|SCHEMA|TABLE|CREATE|OR|REPLACE|VIEW|FUNCTION|RETURNS|RETURN|CASE|WHEN|THEN|ELSE|END|ALTER|SET|ROW|FILTER|COLUMN|MASK|POLICY|EXCEPT|FOR|TABLES|MATCH|COLUMNS|AS|USING|TAGS|EXISTS|AND|SHOW|GRANTS|OWNER|MODIFY|SELECT)\b(?![^<]*<\/span>)/g, '<span class="kw">$1</span>') + '</pre>';
@@ -91,6 +98,8 @@
     ]
   });
 
+  SC.push(labScene('labident', 'ident', 'Lab: users, groups, workspaces', 'Add a user and a service principal, put them in groups, open a workspace for the group. Who can log in?', ['👤 + user', '🚪 ws-prod']));
+
   // 3 ── namespace
   SC.push({
     id: 'namespace', icon: '🔤', title: 'The three-level namespace', sub: 'catalog.schema.object, and how a short name is completed.',
@@ -160,8 +169,29 @@
         draw();
       },
       function (el) {
-        el.appendChild(h(title('Three doors, <em>all</em> needed') + '<div class="doors"><div class="door"><b>🚪 USE CATALOG</b><small>on prod</small></div><span class="arr">→</span><div class="door"><b>🚪 USE SCHEMA</b><small>on prod.hr (or the catalog)</small></div><span class="arr">→</span><div class="door"><b>📖 SELECT</b><small>on the table, schema or catalog</small></div><span class="arr">→</span><div class="door ok"><b>✅ rows</b><small>after filters and masks</small></div></div>' +
-          '<div class="cols mt"><div>' + sql('GRANT USE CATALOG ON CATALOG prod TO `analysts`;\nGRANT USE SCHEMA, SELECT ON SCHEMA prod.hr TO `analysts`;\nGRANT MODIFY ON TABLE prod.hr.employees TO `hr_pipelines`;\nALTER TABLE prod.hr.employees OWNER TO `hr_admins`;\nSHOW GRANTS ON SCHEMA prod.hr;') + '</div><div>' +
+        var box = h(title('Three doors, <em>all</em> needed', 'Flip the grants of <b>analysts</b>. Bence is a member. Watch what he sees in Catalog Explorer and what his query returns.') +
+          '<div class="dsw">' + [['USE CATALOG', 'ON CATALOG prod'], ['USE SCHEMA', 'ON SCHEMA prod.hr'], ['SELECT', 'ON TABLE prod.hr.employees']].map(function (d, i) {
+            return '<label class="toggle big"><input type="checkbox" data-k="' + i + '"><span class="sw"></span> <span class="mono">GRANT ' + d[0] + ' ' + d[1] + '</span></label>'; }).join('') + '</div>' +
+          '<div class="doors mt" id="dd"></div><div class="cols mt"><div><div class="whois">🗂️ Catalog Explorer <small>as Bence</small></div><div class="xpl big" id="dx"></div></div><div><div class="whois">▶ SELECT * FROM prod.hr.employees</div><div id="dq"></div></div></div>');
+        el.appendChild(box);
+        var on = [false, false, false];
+        function draw() {
+          var names = ['🚪 USE CATALOG', '🚪 USE SCHEMA', '📖 SELECT'], miss = on.indexOf(false);
+          box.querySelector('#dd').innerHTML = names.map(function (n, i) { return '<div class="door ' + (on[i] ? 'ok' : 'shut') + '"><b>' + n + '</b><small>' + (on[i] ? 'open' : 'closed') + '</small></div><span class="arr">→</span>'; }).join('') + '<div class="door ' + (miss < 0 ? 'ok' : 'shut') + '"><b>' + (miss < 0 ? '✅ rows' : '🚫 no rows') + '</b><small>' + (miss < 0 ? 'all three doors open' : 'stopped at door ' + (miss + 1)) + '</small></div>';
+          var c = on[0], sc = c && on[1], t = sc && on[2];
+          box.querySelector('#dx').innerHTML = '<div class="xn ' + (c ? 'read' : 'none') + '">📚 prod <span class="st">' + (c ? '✓ visible' : '✗ hidden') + '</span></div>' +
+            '<div class="xn l1 ' + (sc ? 'read' : 'none') + '">🗂️ hr <span class="st">' + (sc ? '✓ visible' : '✗ hidden') + '</span></div>' +
+            '<div class="xn l2 ' + (t ? 'read' : 'none') + '">📋 employees <span class="st">' + (t ? '✓ query' : '✗ hidden') + '</span></div>' +
+            '<div class="xn l2 none">📋 departments <span class="st">✗ hidden</span></div>';
+          var err = ['PERMISSION_DENIED: User does not have USE CATALOG on Catalog \'prod\'.', 'PERMISSION_DENIED: User does not have USE SCHEMA on Schema \'prod.hr\'.', 'PERMISSION_DENIED: User does not have SELECT on Table \'prod.hr.employees\'.'];
+          box.querySelector('#dq').innerHTML = miss < 0 ? '<table class="dt2 mini"><tr><th>full_name</th><th>country</th><th>department</th></tr>' + ROWS.slice(0, 4).map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>…</td></tr>'; }).join('') + '</table>' + (on[0] && on[1] && on[2] ? '<p class="small">departments stays hidden: SELECT was granted on one table only.</p>' : '')
+            : '<div class="banner warn">' + err[miss] + '</div><p class="small">The check runs top-down and stops at the first closed door. Nothing is read.</p>';
+        }
+        box.querySelectorAll('[data-k]').forEach(function (x) { x.onchange = function () { on[+x.dataset.k] = x.checked; draw(); }; });
+        draw();
+      },
+      function (el) {
+        el.appendChild(h(title('Grant, own, <em>no DENY</em>') + '<div class="cols"><div>' + sql('GRANT USE CATALOG ON CATALOG prod TO `analysts`;\nGRANT USE SCHEMA, SELECT ON SCHEMA prod.hr TO `analysts`;\nGRANT MODIFY ON TABLE prod.hr.employees TO `hr_pipelines`;\nALTER TABLE prod.hr.employees OWNER TO `hr_admins`;\nSHOW GRANTS ON SCHEMA prod.hr;') + '</div><div>' +
           list(['The <b>owner</b> has every privilege on the object and can grant it. Make groups owners, not people.', '<b>MANAGE</b> lets someone grant and drop without owning.', '-There is <b>no DENY</b>. You cannot take back at table level what a schema grant gives.', '+Need an exception? Put the table in another schema, or use a filter or mask.']) + '</div></div>'));
       },
       function (el, api) {
@@ -172,6 +202,8 @@
       }
     ]
   });
+
+
 
   // shared demo table for scenes 5-7
   var ROWS = [['Anna Kovacs', 'HU', 61200, '412-55-7310'], ['Felix Weber', 'DE', 84500, '233-18-4402'], ['Bence Nagy', 'HU', 112300, '508-23-9967'], ['Tessa Smith', 'GB', 58800, '145-66-2051'], ['Reka Toth', 'HU', 70400, '590-12-3348']];
@@ -187,6 +219,8 @@
   function twoUsers(opts) {
     return '<div class="cols two"><div><div class="whois">👩‍💼 Anna <small>hr_admins</small></div>' + miniTable('admin', opts) + '</div><div><div class="whois">🧑‍💻 Bence <small>analysts_hu</small></div>' + miniTable('analyst', opts) + '</div></div>';
   }
+
+  SC.push(labScene('labgrants', 'grants', 'Lab: grants, tables and files', 'GRANT and REVOKE USE CATALOG, USE SCHEMA, SELECT, READ VOLUME and BROWSE. Catalog Explorer and the query, as each person.', ['🔑 USE CATALOG', '📁 READ VOLUME']));
 
   // 5 ── dynamic views
   SC.push({
@@ -221,6 +255,8 @@
     ]
   });
 
+  SC.push(labScene('labview', 'view', 'Lab: a dynamic view', 'Create the view, grant it, add rows, then grant the table by mistake and watch the bypass.', ['🪞 employees_v', '⚠️ bypass']));
+
   // 6 ── row filters
   SC.push({
     id: 'rowfilter', icon: '🚦', title: 'Row filters', sub: 'A boolean function attached to the table. FALSE rows never leave the engine.',
@@ -254,6 +290,8 @@
     ['Partial', "concat('***-**-', right(v, 4))", function (v) { return '***-**-' + v.slice(-4); }, 'Lets people match the last digits on a phone call.'],
     ['Hash', 'sha2(v, 256)', function (v) { var x = 0; for (var i = 0; i < v.length; i++) x = (x * 31 + v.charCodeAt(i)) >>> 0; return x.toString(16).slice(0, 8) + '…'; }, 'Same input, same output: joins and COUNT DISTINCT still work. Not anonymous.'],
     ['Constant', "'[REDACTED]'", function () { return '[REDACTED]'; }, 'Clear for humans. Types must still match the column.']];
+  SC.push(labScene('labrow', 'rowfilter', 'Lab: a row filter', 'CREATE FUNCTION, SET ROW FILTER, insert rows, change a group. Rows per person.', ['🚦 3 / 8 rows']));
+
   SC.push({
     id: 'masks', icon: '🎭', title: 'Column masks', sub: 'A function that returns the value this user may see, with the same type.',
     thumb: '<span class="tag" style="font-size:17px">***-**-7310</span>',
@@ -283,6 +321,8 @@
     ]
   });
 
+
+
   // 8 ── ABAC
   var ABAC = [
     { l: 'Governed tags', n: 'An account admin defines the tag <b>pii</b> with allowed values (email, salary, national_id…) and who may assign it. Data stewards tag columns.', tables: [['employees', ['national_id', 'email']], ['customers', ['email']]], policy: false },
@@ -290,6 +330,8 @@
     { l: 'A new table appears', n: 'Someone creates <span class="mono">prod.crm.leads</span> with an <b>email</b> column and tags it. Nobody attached a mask, nobody wrote a GRANT for the policy.', tables: [['employees', ['national_id', 'email']], ['customers', ['email']], ['leads', ['email'], true]], policy: true },
     { l: 'Already protected', n: 'The policy matches the tag, so <span class="mono">leads.email</span> is masked from the first query. Classification drives protection.', tables: [['employees', ['national_id', 'email']], ['customers', ['email']], ['leads', ['email'], true, true]], policy: true }
   ];
+  SC.push(labScene('labmask', 'mask', 'Lab: column masks', 'Mask salary, ID and email one by one. Same rows, different values.', ['🎭 salary', '***-**-7310']));
+
   SC.push({
     id: 'abac', icon: '🏷️', title: 'Tags and ABAC policies', sub: 'One policy high in the hierarchy, applied wherever a tag matches. Today and tomorrow.',
     thumb: '<span class="tag">🏷️ pii=email</span><span style="font-size:40px">→</span><span class="tag">🎭</span>',
@@ -322,13 +364,7 @@
     ]
   });
 
-  // 9 ── the lab
-  SC.push({
-    id: 'lab', icon: '🧪', title: 'The access lab', sub: 'Create groups and service principals, grant, add rows, switch between view, filter + mask and ABAC, and see who gets what.',
-    thumb: '<span style="font-size:46px">🧪</span><span class="tag">run as Bence</span><span class="tag">✓ 3 / 8 rows</span>',
-    wide: true,
-    steps: [function (el) { var d = document.createElement('div'); el.appendChild(d); window.GovLab.mount(d); }]
-  });
+
 
   // 10 ── which tool when
   var DEC = [
@@ -337,6 +373,8 @@
     { q: 'Do people query this table directly (BI, notebooks, Genie)?', y: ['🎭 Row filter / column mask', 'Attached to the table: there is no second object to bypass.'], n: 3 },
     { q: 'Is it a curated subset or a join of several tables?', y: ['🪞 Dynamic view', 'Build the curated object as a view; grant only the view.'], n: ['🔑 Grants are enough', 'If everyone who may read the table may see all of it, plain grants on the schema are the simplest answer.'] }
   ];
+  SC.push(labScene('lababac', 'abac', 'Lab: tags and an ABAC policy', 'A governed tag, tagged columns, one policy on the catalog, and a new table tomorrow.', ['🏷️ pii=email', '📜 POLICY']));
+
   SC.push({
     id: 'decide', icon: '🧭', title: 'Which tool when?', sub: 'Grants, dynamic views, row filters and masks, or ABAC. A four-question guide.',
     thumb: '<span style="font-size:52px">🧭</span>',

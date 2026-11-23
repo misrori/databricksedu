@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Governance storyboard · databricksedu</title>
-<meta name="description" content="An interactive storyboard about Unity Catalog administration: account and workspaces, users, groups and service principals, the three-level namespace, privileges, dynamic views, row filters, column masks and ABAC policies, with an access lab.">
+<meta name="description" content="An interactive storyboard about Unity Catalog administration: account and workspaces, users, groups and service principals, the three-level namespace, privileges, dynamic views, row filters, column masks and ABAC policies, with six small labs where you run the SQL and see what each user gets.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
 
 <header class="top">
   <h1>The <span>Governance</span> storyboard</h1>
-  <div class="sub">Who may log in, which names they reach, which tables they read, and which rows and values come back. Click a frame, open the 🧪 access lab, or press <b>Present</b>.</div>
+  <div class="sub">Who may log in, which names they reach, which tables they read, and which rows and values come back. Click a frame or a 🧪 lab, or press <b>Present</b>. <b>F</b>: full screen.</div>
   <span id="score" title="Questions answered correctly">🎯 0 / 0</span>
   <button class="pill sk thin" id="bReset" title="Forget progress, answers and the lab">↺ Reset</button>
   <button class="pill primary" id="bPresent">▶ Present</button>
@@ -57,6 +57,7 @@
 <script src="../_shared/storyboard.js"></script>
 <script src="scenes.js"></script>
 <script src="board.js"></script>
+<script src="../_shared/fullscreen.js"></script>
 <script src="../_shared/back.js"></script>
 </body>
 </html>

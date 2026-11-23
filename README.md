@@ -49,7 +49,7 @@ databricksedu.save("data-engineering")         # a whole track, or save("all")
 
 Everything is also published as a website: **https://misrori.github.io/databricksedu/**. It has the same app
 (slides, notes, quizzes), the hand-made extras (the Delta Lake storyboard with a
-storage path decoder and a Delta table simulator, the Spark optimization storyboard, the Governance storyboard with an access lab, the Databricks story, a broadcast
+storage path decoder and a Delta table simulator, the Spark optimization storyboard, the Governance storyboard with six SQL labs, the Databricks story, a broadcast
 hash join animation, an OPTIMIZE & VACUUM deck) and the Markdown of every module under `markdown/<module id>.md`. The website is rebuilt from `main` by
 `.github/workflows/pages.yml` (`python tools/build.py && python tools/site.py`).
 
