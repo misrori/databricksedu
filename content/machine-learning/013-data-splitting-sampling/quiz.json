@@ -1,0 +1,22 @@
+[
+  {"q": "`df.randomSplit([0.8, 0.2], seed=42)` on 5,000 rows returns 4,021 and 979 rows. Why not 4,000 and 1,000?",
+   "o": ["Each row is assigned with a random draw, so the proportions are approximate", "The seed was wrong", "Spark drops rows with nulls", "randomSplit always rounds to whole partitions"],
+   "c": 0,
+   "e": "Each row is assigned by a random number against the weight ranges. The seed makes it repeatable, not exact."},
+  {"q": "Rows are monthly usage snapshots. Why is a random split a problem?",
+   "o": ["Spark cannot split DATE columns", "It is too slow on time series", "Training rows from later months teach the model things that did not exist yet at test time (look-ahead leakage)", "Random splits always produce imbalanced classes"],
+   "c": 2,
+   "e": "For time-ordered data, train on earlier periods and evaluate on later ones, the way the model is used in production."},
+  {"q": "What does Spark ML's `CrossValidator` do with `foldCol=\"fold\"`?",
+   "o": ["It does forward chaining over the fold numbers", "It uses your fold numbers (0 to numFolds - 1) and trains each fold on all other folds", "It stratifies the folds by the label automatically", "It ignores `numFolds`"],
+   "c": 1,
+   "e": "A custom fold column replaces the random assignment, but each fold still trains on every other fold, including later ones."},
+  {"q": "Each subscriber has six rows. How do you keep a subscriber out of both train and test?",
+   "o": ["Use a larger seed", "Use `sampleBy` on `subscriber_id`", "Sort by `subscriber_id` before `randomSplit`", "Split the distinct `subscriber_id` values, then join them back to the rows"],
+   "c": 3,
+   "e": "Group-based splits assign whole groups. The row proportions are then only approximately 80/20."},
+  {"q": "What does `df.sampleBy(\"churned\", fractions={0: 0.37, 1: 1.0}, seed=42)` return?",
+   "o": ["Exactly 37% of the stayers and all churners", "About 37% of the stayers and all churners, so the classes are roughly balanced", "A train/test split with a 37/100 ratio", "37 stayers and 1 churner"],
+   "c": 1,
+   "e": "`sampleBy` keeps each row with the fraction of its class. Use such a sample for training or prototyping, never as a test set."}
+]

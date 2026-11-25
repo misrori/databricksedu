@@ -4,7 +4,7 @@
   {"id": "spark", "title": "Apache Spark Programming", "icon": "🔥",
    "desc": "DataFrames from the first read to window functions, complex types, streaming, the Spark UI and tuning. Follows the Apache Spark Programming with Databricks course."},
   {"id": "machine-learning", "title": "Machine Learning", "icon": "🤖",
-   "desc": "The ML lifecycle on Databricks: MLflow tracking, feature tables, tuning, models in Unity Catalog, serving and monitoring."},
+   "desc": "The ML lifecycle on Databricks: data preparation (exploring, cleaning, splitting, imputation, encoding, scaling, Spark ML pipelines), MLflow tracking, feature tables, tuning, models in Unity Catalog, serving and monitoring."},
   {"id": "generative-ai", "title": "Generative AI", "icon": "✨",
    "desc": "LLM basics, prompting, embeddings and Vector Search, RAG, agents with tools, evaluation and governance."},
   {"id": "analytics", "title": "Analytics & AI/BI", "icon": "📊",

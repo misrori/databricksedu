@@ -1,0 +1,22 @@
+[
+  {"q": "`display(df.summary())` shows `count = 4286` for `age` in a table of 5,000 rows. What does that tell you?",
+   "o": ["The table has 4,286 distinct ages", "714 rows have a null `age`", "summary() sampled the table", "714 ages are outliers"],
+   "c": 1,
+   "e": "The count row of `summary()` counts only non-null values. The gap to the row count is the number of nulls."},
+  {"q": "27% of subscribers churned. Why does that matter before training?",
+   "o": ["Spark ML cannot train on imbalanced labels", "It means the label column has nulls", "Delta tables cannot store imbalanced data", "A model that always predicts \"stays\" already reaches 73% accuracy, so accuracy alone is misleading"],
+   "c": 3,
+   "e": "With an imbalanced label, look at per-class metrics and keep the class ratio when you split and sample."},
+  {"q": "What does `SELECT * FROM t VERSION AS OF 0` do to the table `t`?",
+   "o": ["Nothing: it only reads the data as it was at version 0", "It rolls `t` back to version 0", "It deletes versions after 0", "It creates a new version 0"],
+   "c": 0,
+   "e": "Time travel reads are read-only. To change the table back, use `RESTORE TABLE ... TO VERSION AS OF`, which writes a new version."},
+  {"q": "You want to retrain on exactly the same data in six months. What is the safe plan?",
+   "o": ["Write down the date and use `timestampAsOf` later", "Nothing: Delta keeps every version forever", "Record the version, and save a copy of the training snapshot because VACUUM and log retention remove old versions", "Run `OPTIMIZE` so the version is kept"],
+   "c": 2,
+   "e": "By default VACUUM removes unreferenced files older than 7 days and history is kept for 30 days. Time travel is not a long-term backup."},
+  {"q": "Which Data profiling type fits a growing table of model predictions?",
+   "o": ["Snapshot", "Time series", "None: profiling only works on feature tables", "Inference"],
+   "c": 3,
+   "e": "An inference profile tracks prediction drift and, when labels are available, model quality metrics."}
+]

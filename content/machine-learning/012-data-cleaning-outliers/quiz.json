@@ -1,0 +1,22 @@
+[
+  {"q": "Which step may safely run **before** the train/test split?",
+   "o": ["Removing rows with a negative monthly fee", "Capping usage at the IQR upper bound", "Filling missing ages with the median age", "Dropping values more than 3 standard deviations from the mean"],
+   "c": 0,
+   "e": "A fixed domain rule does not learn anything from the data. IQR bounds, medians and z-scores are computed from rows, so they must come from the training set only."},
+  {"q": "What is the difference between an invalid value and an outlier?",
+   "o": ["There is none; both should be removed", "Outliers are always typos, invalid values are real", "An invalid value is impossible (age 211); an outlier is possible but extreme (a very heavy user)", "Invalid values are nulls, outliers are non-null"],
+   "c": 2,
+   "e": "Fix or remove impossible values with rules. Investigate outliers before you decide, because they may carry signal."},
+  {"q": "What does `df.na.drop(thresh=8)` keep?",
+   "o": ["Rows with at most 8 null values", "Rows with at least 8 non-null values", "The first 8 columns", "Columns with fewer than 8 nulls"],
+   "c": 1,
+   "e": "`thresh` is the minimum number of non-null values a row needs to be kept. It overrides `how`."},
+  {"q": "A few values are 10 times too large. Why does the z-score rule flag fewer of them than the IQR rule?",
+   "o": ["The z-score ignores large values", "approxQuantile is not exact", "IQR always flags more rows", "The extremes inflate the mean and standard deviation, so they hide each other"],
+   "c": 3,
+   "e": "Mean and standard deviation are pulled by extremes. Quartiles are robust: a few huge values barely move them."},
+  {"q": "You cap `avg_weekly_minutes` with `F.least(F.greatest(x, F.lit(lower)), F.lit(upper))`. Where should `lower` and `upper` come from?",
+   "o": ["`approxQuantile` on the full table", "`approxQuantile` on the training split, then the same values for test and new data", "`approxQuantile` on each split separately", "`approxQuantile` on the test split, to match the evaluation data"],
+   "c": 1,
+   "e": "Learned thresholds are fit on the training set only and reused unchanged, so the test set stays unseen."}
+]

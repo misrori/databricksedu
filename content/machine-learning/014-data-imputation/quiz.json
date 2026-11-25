@@ -1,0 +1,22 @@
+[
+  {"q": "You fit an `Imputer(strategy=\"median\")` on the training set. What value fills a null in the test set?",
+   "o": ["The median of the test set", "The median learned from the training set", "The median of train and test together", "Zero, because the test set was not used in `fit`"],
+   "c": 1,
+   "e": "`fit` learns one surrogate value per column from the data it gets. `transform` reuses it on every dataset, so test and inference data are filled exactly like training data."},
+  {"q": "A count column has the observed values 0, 1, 1, 2 and 40. Which strategy gives a fill value closer to a typical row?",
+   "o": ["`mean`, because it uses every value", "`mean`, because the median ignores the outlier", "`median`, because the outlier 40 does not move it", "Both give the same value"],
+   "c": 2,
+   "e": "The mean is 8.8, pulled up by one outlier. The median is 1, the typical value. Prefer the median for skewed counts and amounts."},
+  {"q": "Why must a `was_missing` indicator column be created before the `Imputer` runs?",
+   "o": ["`Imputer` drops columns it does not know", "`VectorAssembler` needs the flag to come first", "The flag must be part of `inputCols`", "After imputing there are no nulls left, so the flag would always be 0"],
+   "c": 3,
+   "e": "The indicator records where the original gaps were. Once the gaps are filled, `isNull()` finds nothing."},
+  {"q": "On serverless compute you need to fill a 0/1 column `has_app`. What works?",
+   "o": ["`Imputer(strategy=\"median\")`: the median of a 0/1 column is its more common value", "`Imputer(strategy=\"mode\")`, the natural choice for discrete values", "`Imputer(strategy=\"mean\")`, then keep the decimals", "Leave the nulls: `VectorAssembler` skips them by default"],
+   "c": 0,
+   "e": "`strategy=\"mode\"` fails on serverless with `UC_COMMAND_NOT_SUPPORTED`. The median of 0/1 values is 0 or 1, so it behaves like the mode. `VectorAssembler` raises an error on nulls by default."},
+  {"q": "Some rows have a null in the label column `churned`. What should you do?",
+   "o": ["Impute it with the median label", "Impute it with the most common label", "Investigate and remove those rows; never impute the label", "Fill it with 0, because most subscribers stay"],
+   "c": 2,
+   "e": "Filling the label invents the very answer the model is supposed to learn. Rows without a label cannot be used for training."}
+]

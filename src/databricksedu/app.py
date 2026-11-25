@@ -18,6 +18,8 @@ EXTRAS = [
      "desc": "Query plans, AQE, statistics, OPTIMIZE and VACUUM, broadcast and sort-merge joins, query profile, Photon.", "module": "optimizing-spark-code"},
     {"id": "governance-storyboard", "icon": "🛡️", "title": "Governance storyboard",
      "desc": "Account, workspaces, groups and service principals, the namespace, grants, dynamic views, row filters, masks and ABAC, with six small SQL labs.", "module": "row-filters-column-masks"},
+    {"id": "dataprep-storyboard", "icon": "🧪", "title": "Data preparation storyboard",
+     "desc": "The ML data prep workflow: cleaning, outliers, splits and sampling, imputation, encoding, scaling and Spark ML pipelines, with a lab that runs them on one table.", "module": "preprocessing-pipelines"},
     {"id": "databricks-story", "icon": "🎨", "title": "The Databricks story",
      "desc": "An animated sketch story: from one machine to a data + AI platform.", "module": "databricks-story"},
     {"id": "broadcast-hash-join", "icon": "🎬", "title": "Broadcast hash join",

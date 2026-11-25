@@ -1,0 +1,22 @@
+[
+  {"q": "What happens when you call `pipeline_model.transform(test_df)` on a fitted `PipelineModel`?",
+   "o": ["Each estimator is refit on the test rows first", "The stored training statistics are applied; nothing is re-learned", "Only the transformers run; the estimators are skipped", "The test rows are added to the training statistics"],
+   "c": 1,
+   "e": "A PipelineModel contains fitted models for every stage. `transform` only applies them, which is why test and new data are prepared exactly like the training data."},
+  {"q": "Which of these stages is a transformer that learns nothing from data?",
+   "o": ["Imputer", "StandardScaler", "VectorAssembler", "StringIndexer"],
+   "c": 2,
+   "e": "VectorAssembler only concatenates columns into a vector. Imputer learns medians or means, StandardScaler learns mean and std, StringIndexer learns the category list."},
+  {"q": "In the two-branch layout, why is the StandardScaler placed before the final VectorAssembler, on the numeric vector only?",
+   "o": ["So that one-hot vectors and 0/1 flags are not scaled", "Because the final VectorAssembler removes nulls", "Because StandardScaler only accepts string columns", "So that the scaler can also see the label"],
+   "c": 0,
+   "e": "One-hot slots and flags are already 0/1. Scaling them would make them harder to read and adds nothing, so only the continuous columns are scaled, then everything is joined."},
+  {"q": "A scoring job receives a subscriber with a region the training data never had. The StringIndexer uses `handleInvalid=\"keep\"` and the OneHotEncoder uses its defaults. What does the region part of `features` look like?",
+   "o": ["The job fails with an unseen label error", "The row is silently dropped", "The row gets the most frequent region", "All zeros: the extra 'keep' index is the one dropLast removes"],
+   "c": 3,
+   "e": "`keep` maps unknown values (and nulls) to one extra index. OneHotEncoder's default `dropLast=True` drops that last slot, so the row gets all zeros for region."},
+  {"q": "You fit the pipeline on all 5,000 rows and then split into train and test. What is the problem?",
+   "o": ["Spark ML refuses to transform rows it was fit on", "The pipeline cannot be saved afterwards", "The test rows shaped the medians, means and category lists, so the test score is optimistic", "The feature vectors of train and test get different sizes"],
+   "c": 2,
+   "e": "This is leakage. The test set is meant to stand in for unseen data, but its rows influenced the learned statistics. Split first, then `fit(train)`."}
+]

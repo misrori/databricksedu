@@ -1,0 +1,22 @@
+[
+  {"q": "In the training data, `plan` has Basic 1,802 rows, Plus 1,435 and Premium 763. Which index does `StringIndexer` give to Basic?",
+   "o": ["`0.0`, because it is the most frequent", "`1.0`, because indices start at 1", "`0.0`, because it comes first alphabetically", "`2.0`, because it is the cheapest plan"],
+   "c": 0,
+   "e": "The default `stringOrderType` is `frequencyDesc`: the most frequent category gets index 0. Alphabetical order only breaks ties, and meaning plays no role."},
+  {"q": "`region` has 4 categories in training. With `handleInvalid=\"keep\"` and the default `dropLast=True`, what does an unseen value such as `Islands` become after `OneHotEncoder`?",
+   "o": ["An error at transform time", "A vector of size 5 with a 1 in the last position", "An all-zero vector of size 4", "A null vector"],
+   "c": 2,
+   "e": "The unseen value gets the extra index 4. The encoder knows 5 indices, drops the last one, and the last one is exactly that unknown bucket, so the vector has 4 zeros."},
+  {"q": "A column `size` has the values Small, Medium and Large, and the order matters. What is the right encoding?",
+   "o": ["`StringIndexer`, because it keeps the natural order", "`OneHotEncoder` without `StringIndexer`", "`TargetEncoder` with `targetType=\"continuous\"`", "An explicit mapping such as `F.when(c == \"Small\", 1).when(c == \"Medium\", 2)...`"],
+   "c": 3,
+   "e": "`StringIndexer` orders by frequency, not by meaning. Only a mapping you write yourself guarantees Small < Medium < Large."},
+  {"q": "When is feeding `StringIndexer` indices directly (without one-hot) to a model reasonable?",
+   "o": ["For linear regression, because it is faster", "For Spark ML tree models that read the category metadata, with `maxBins` at least the number of categories", "Never, Spark ML models reject indices", "Whenever the column has more than 100 categories"],
+   "c": 1,
+   "e": "Spark ML trees use the nominal metadata that `StringIndexer` attaches and split on groups of categories. A linear model would read 0 < 1 < 2 as a real numeric order."},
+  {"q": "You fit `TargetEncoder` on the whole table before splitting, and validation AUC jumps. What happened?",
+   "o": ["Smoothing was too low", "The test labels leaked into the encoded feature", "`targetType` should have been `\"continuous\"`", "Nothing: target encoding is expected to help this much"],
+   "c": 1,
+   "e": "Target encoding computes the mean label per category. Fitted on all rows, the test rows' own labels are baked into their feature. Fit it on the training set only."}
+]

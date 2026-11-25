@@ -1,0 +1,22 @@
+[
+  {"q": "You run `StandardScaler(inputCol=\"num_vec\", outputCol=\"num_scaled\")` with no other options. What does each value become?",
+   "o": ["(x − mean) / std", "x / std", "(x − min) / (max − min)", "(x − median) / IQR"],
+   "c": 1,
+   "e": "Spark's StandardScaler defaults to `withMean=False, withStd=True`: it only divides by the standard deviation. Set `withMean=True` for real z-scores."},
+  {"q": "Why does Spark's StandardScaler not center the data by default?",
+   "o": ["Centering changes the order of the values", "The mean cannot be computed in a distributed way", "Subtracting the mean turns sparse vectors into dense ones, which can use a lot of memory", "Centering is only needed for tree models"],
+   "c": 2,
+   "e": "A sparse vector stores only non-zero values. After subtracting the mean almost every entry is non-zero, so the vector becomes dense."},
+  {"q": "A scaler is fit on the training set and applied to the test set. The test set's scaled mean is 0.04 and its standard deviation 1.01. What does this mean?",
+   "o": ["This is expected: the test set is scaled with the training statistics", "The scaler was fit on the wrong data", "The test set must be refit to get exactly 0 and 1", "The scaler failed and must be rerun with `withStd=False`"],
+   "c": 0,
+   "e": "Only the data the scaler was fit on lands exactly at 0 and 1. Test rows reuse the training μ and σ, so their statistics are close but not exact. That keeps the evaluation honest."},
+  {"q": "A column has a few extreme values caused by a unit error you cannot fix yet. Which scaler keeps the normal values spread out best?",
+   "o": ["MinMaxScaler", "StandardScaler with withMean=True", "StandardScaler with defaults", "RobustScaler"],
+   "c": 3,
+   "e": "RobustScaler uses the median and the interquartile range, which barely move when a few extreme values are added. Min and max, and the standard deviation, are pulled by the outliers."},
+  {"q": "For which model is scaling the numeric features usually unnecessary?",
+   "o": ["K-Means", "Random forest", "Logistic regression with L2 regularization", "Support vector machine"],
+   "c": 1,
+   "e": "Tree splits compare a feature with a threshold, and rescaling moves the threshold with the values, so the same split is found. Distance-based, gradient-based and regularized models are scale-sensitive."}
+]
