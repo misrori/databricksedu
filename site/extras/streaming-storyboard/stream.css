@@ -196,3 +196,13 @@ svg.tl .wmn { stroke: var(--teal); stroke-width: 1.6; stroke-dasharray: 2 4; opa
 svg.tl .wmnt { font-family: var(--hand); font-size: 16px; fill: var(--teal); opacity: .8; }
 svg.tl .ev.dr { fill: var(--drop); }
 svg.tl .tlk.dr { stroke: var(--drop); stroke-width: 2.5; stroke-dasharray: 5 4; }
+svg.tl.otl { max-width: 1050px; margin: 0 auto; }
+svg.tl .tpick { cursor: pointer; }
+svg.tl .thit { fill: transparent; }
+svg.tl .tpick:hover .ev { stroke: var(--ink); stroke-width: 2; }
+svg.tl .ev.sel { stroke: var(--ink); stroke-width: 3.5; }
+svg.tl .tlk.sel { stroke: var(--ink); stroke-width: 3; }
+.tinfo { max-width: 1050px; margin: 2px auto 6px; background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 7px 12px; font-size: 15px; line-height: 1.55; }
+.tinfo .tid { font-family: var(--mono); font-weight: 700; }
+table.oin tr[data-e] { cursor: pointer; }
+table.oin tr.picked td { background: #e8f0fe !important; box-shadow: inset 0 2px 0 var(--blue), inset 0 -2px 0 var(--blue); color: var(--ink); }

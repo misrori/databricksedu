@@ -93,7 +93,7 @@
     steps: [
       function (el) {
         var box = h(title('New orders in, <em>three result tables</em> out') +
-          '<div class="ctl"><span class="bsel" id="obs"></span><label class="toggle"><input type="checkbox" id="owm" checked><span class="sw"></span> with watermark (10 min)</label></div>' +
+          '<div class="ctl"><span class="bsel" id="obs"></span><label class="toggle"><input type="checkbox" id="owm" checked><span class="sw"></span> with watermark (10 min)</label><label class="toggle"><input type="checkbox" id="otlon"><span class="sw"></span> 📈 show the timeline</label></div>' +
           '<div class="omtop"><div><div class="lbl2">📥 input: orders <small>(the stream, all rows so far)</small></div><table class="dt2 mini oin" id="oin"></table><div class="small" id="ofn"></div></div>' +
           '<div><div id="okv" class="row" style="gap:6px"></div><div id="ocode" class="ocode"></div><div class="verdict" id="ov" style="margin-top:6px;font-size:15.5px"></div></div></div>' +
           '<div id="otl" class="mt"></div><div class="grid3" id="ocols"></div>');
@@ -120,10 +120,18 @@
           }).join('') + '</table>';
         }
         // two clocks: event time on top (windows + watermark), processing time below (batches)
-        var prevWm = null;
+        var prevWm = null, sel = null;
+        function info(res, wm) {
+          if (!sel) return '';
+          var e = E.SCRIPT.filter(function (x) { return x.id === sel; })[0], d = e.at - e.et, ws = Math.floor(e.et / 10) * 10, rec = res.update[e.b];
+          var v = rec.rows.filter(function (x) { return x.e.id === sel; })[0], ok = !wm || v.ok;
+          var status = !ok ? '<b style="color:var(--drop)">dropped</b> in append and update: its window ' + fmt(ws) + '–' + fmt(ws + 10) + ' ended before the watermark ' + fmt(rec.wmBefore) + '. Complete mode still counts it.' :
+            d >= 10 ? '<b style="color:#8a5a00">late, but counted</b>: its window ' + fmt(ws) + '–' + fmt(ws + 10) + ' was still open (watermark ' + fmt(rec.wmBefore) + ').' : '<b style="color:var(--green)">on time</b>, counted in ' + fmt(ws) + '–' + fmt(ws + 10) + '.';
+          return '<div class="tinfo"><span class="tid">order ' + NAMES[e.id] + '</span> <span class="tag">' + e.key + '</span> <span class="tag">€' + e.amount + '</span> · happened <b>' + fmt(e.et) + '</b> (event time) · arrived <b>' + fmt(e.at) + '</b> (processing time) · <b>' + d + ' min</b> later · processed in <b>batch ' + (e.b + 1) + '</b> at ' + fmt(E.BATCH_AT[e.b]) + '<br>' + status + '</div>';
+        }
         function timeline(res, wm) {
           var u = res.update[b], W = 1000, x0 = 120, x1 = W - 20, T0 = -5, T1 = 52, X = function (t) { return x0 + (t - T0) / (T1 - T0) * (x1 - x0); };
-          var yE = 56, yP = 176, g = '';
+          var yE = 48, yP = 136, g = '';
           // windows on the event-time axis
           [0, 10, 20, 30, 40].forEach(function (s) {
             var fin = wm && s + 10 <= u.wmBefore, open = res.update[b].state.some(function (w) { return w.start === s; });
@@ -144,27 +152,30 @@
           evs.forEach(function (e) {
             var cur = e.b === b, late = e.at - e.et >= 10, drop = wm && !verdict[e.id];
             var c = !cur ? 'old' : drop ? 'dr' : late ? 'late' : '';
-            g += '<path class="tlk ' + c + '" d="M' + X(e.et) + ' ' + yE + ' L' + X(e.at) + ' ' + yP + '"/>';
+            g += '<path class="tlk ' + c + (sel === e.id ? ' sel' : '') + '" d="M' + X(e.et) + ' ' + yE + ' L' + X(e.at) + ' ' + yP + '"/>';
           });
           evs.forEach(function (e) {
             var cur = e.b === b, late = e.at - e.et >= 10, drop = wm && !verdict[e.id];
             var c = 'ev ' + (!cur ? 'ghost' : drop ? 'dr' : late ? 'late' : '');
-            g += '<circle class="' + c + '" cx="' + X(e.et) + '" cy="' + yE + '" r="' + (cur ? 8 : 6) + '"/><circle class="' + c + '" cx="' + X(e.at) + '" cy="' + yP + '" r="' + (cur ? 8 : 6) + '"/>';
-            if (cur) g += '<text class="evl" x="' + X(e.et) + '" y="' + (yE + 36) + '" text-anchor="middle">' + fmt(e.et) + ' ' + e.key.slice(0, 3) + '</text>';
+            c += sel === e.id ? ' sel' : '';
+            g += '<g class="tpick" data-e="' + e.id + '"><circle class="' + c + '" cx="' + X(e.et) + '" cy="' + yE + '" r="' + (cur ? 8 : 6) + '"/><circle class="' + c + '" cx="' + X(e.at) + '" cy="' + yP + '" r="' + (cur ? 8 : 6) + '"/>' +
+              '<circle class="thit" cx="' + X(e.et) + '" cy="' + yE + '" r="12"/><circle class="thit" cx="' + X(e.at) + '" cy="' + yP + '" r="12"/></g>';
+            if (cur) g += '<text class="evl" x="' + X(e.et) + '" y="' + (yE + 28) + '" text-anchor="middle">' + fmt(e.et) + ' ' + e.key.slice(0, 3) + '</text>';
           });
           // the watermark: an event-time value, used in this batch; animated from where it was
           var wmLayer = '';
           if (wm && u.wmBefore > E.NEG / 2) {
             wmLayer = '<g class="wmg" id="wmg"><rect class="wmz" x="' + (x0 - X(u.wmBefore)) + '" y="' + (yE - 34) + '" width="' + (X(u.wmBefore) - x0) + '" height="68"/>' +
-              '<line class="wm" x1="0" y1="' + (yE - 38) + '" x2="0" y2="' + (yP - 20) + '"/><text class="wmt" x="6" y="' + (yP - 26) + '">watermark ' + fmt(u.wmBefore) + '</text></g>';
+              '<line class="wm" x1="0" y1="' + (yE - 38) + '" x2="0" y2="' + (yP - 18) + '"/><text class="wmt" x="6" y="' + (yP - 22) + '">watermark ' + fmt(u.wmBefore) + '</text></g>';
           }
           if (wm && u.wmAfter > E.NEG / 2 && u.wmAfter !== u.wmBefore) {
-            g += '<line x1="' + X(u.wmAfter) + '" y1="' + (yE - 38) + '" x2="' + X(u.wmAfter) + '" y2="' + (yE + 70) + '" class="wmn"/><text class="wmnt" x="' + (X(u.wmAfter) + 4) + '" y="' + (yE + 66) + '">next watermark ' + fmt(u.wmAfter) + '</text>';
+            g += '<line x1="' + X(u.wmAfter) + '" y1="' + (yE - 38) + '" x2="' + X(u.wmAfter) + '" y2="' + (yE + 58) + '" class="wmn"/><text class="wmnt" x="' + (X(u.wmAfter) + 4) + '" y="' + (yE + 56) + '">next watermark ' + fmt(u.wmAfter) + '</text>';
           }
-          if (u.maxEt > E.NEG / 2) g += '<text class="tk" x="' + X(u.maxEt) + '" y="' + (yE + 50) + '" text-anchor="middle">▲ max event time ' + fmt(u.maxEt) + '</text>';
+          if (u.maxEt > E.NEG / 2) g += '<text class="tk" x="' + X(u.maxEt) + '" y="' + (yE + 42) + '" text-anchor="middle">▲ max event time ' + fmt(u.maxEt) + '</text>';
           var cap = wm ? 'The watermark is measured on the <b>event-time</b> axis: max event time seen − 10 min. It is computed at the end of a batch and used by the next one. Windows left of it are final.' :
             'No watermark: Spark never knows a window is complete, so every window stays open.';
-          box.querySelector('#otl').innerHTML = '<svg class="tl" viewBox="0 0 ' + W + ' 222">' + g + wmLayer + '</svg><div class="small" style="margin:0 0 6px">' + cap + '</div>';
+          box.querySelector('#otl').innerHTML = '<svg class="tl otl" viewBox="0 0 ' + W + ' 182">' + g + wmLayer + '</svg>' + info(res, wm) + '<div class="small" style="margin:0 0 6px">' + cap + (sel ? '' : ' <b>Click a dot</b> to see one order.') + '</div>';
+          box.querySelectorAll('#otl .tpick').forEach(function (n) { n.onclick = function () { sel = sel === n.dataset.e ? null : n.dataset.e; draw(); }; });
           var gEl = box.querySelector('#wmg');
           if (gEl) {
             var to = X(u.wmBefore), from = prevWm === null ? to : prevWm;
@@ -185,8 +196,9 @@
           box.querySelector('#oin').innerHTML = '<tr><th>order_id</th><th>event_time</th><th>arrived</th><th>store</th><th>amount</th><th></th></tr>' + rows.map(function (e) {
             var late = e.at - e.et >= 10, cur = e.b === b, ok = verdict[e.id];
             var tag = !ok && wm ? '<span class="otag od">dropped*</span>' : late ? '<span class="otag ol">' + (e.at - e.et) + ' min late</span>' : '';
-            return '<tr class="' + (cur ? 'cur fresh' : 'old') + '"><td>' + NAMES[e.id] + '</td><td><b>' + fmt(e.et) + '</b></td><td>' + fmt(e.at) + '</td><td>' + e.key + '</td><td class="num">€' + e.amount + '</td><td>' + tag + '</td></tr>';
+            return '<tr data-e="' + e.id + '" class="' + (cur ? 'cur fresh' : 'old') + (sel === e.id ? ' picked' : '') + '"><td>' + NAMES[e.id] + '</td><td><b>' + fmt(e.et) + '</b></td><td>' + fmt(e.at) + '</td><td>' + e.key + '</td><td class="num">€' + e.amount + '</td><td>' + tag + '</td></tr>';
           }).join('');
+          box.querySelectorAll('#oin tr[data-e]').forEach(function (n) { n.onclick = function () { sel = sel === n.dataset.e ? null : n.dataset.e; draw(); }; });
           box.querySelector('#ofn').innerHTML = wm && rows.some(function (e) { return !verdict[e.id]; }) ? '* dropped in append and update; complete mode ignores the watermark and counts it.' : '';
           box.querySelector('#ocode').innerHTML = code('(orders' + (wm ? '\n   .withWatermark("event_time", "10 minutes")' : '') + '\n   .groupBy(F.window("event_time", "10 minutes"), "store")\n   .agg(F.count("*").alias("orders"),\n        F.sum("amount").alias("revenue")))', 'py');
           box.querySelector('#ocols').innerHTML = MODE3.map(function (m) {
@@ -198,10 +210,12 @@
               '<div class="lbl">the sink table after batch ' + (b + 1) + '</div>' + sinkTable(r, all[b - 1], m[0]) +
               '<div class="small">groups still in state: <b>' + r.state.length + '</b>' + (m[0] === 'append' ? ' · waiting to be final' : m[0] === 'complete' ? ' · never removed' : '') + '</div></div>';
           }).join('');
-          timeline(res, wm);
+          if (box.querySelector('#otlon').checked) timeline(res, wm); else { box.querySelector('#otl').innerHTML = ''; prevWm = null; }
           box.querySelector('#ov').innerHTML = wm ? NOTE[b] : 'Without a watermark nothing is ever final: <b>append</b> is refused, <b>update</b> and <b>complete</b> keep every group in state forever, and the late Vienna 10:06 order is counted.';
         }
         box.querySelector('#owm').onchange = draw;
+        try { box.querySelector('#otlon').checked = localStorage.getItem('streamsb-tl') === '1'; } catch (x) { }
+        box.querySelector('#otlon').onchange = function () { try { localStorage.setItem('streamsb-tl', this.checked ? '1' : '0'); } catch (x) { } draw(); };
         draw();
       },
       function (el) {
