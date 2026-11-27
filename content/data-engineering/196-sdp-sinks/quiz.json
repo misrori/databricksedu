@@ -1,0 +1,22 @@
+[
+  {"q": "A pipeline defines `dp.create_sink(name=\"export_sink\", format=\"delta\", options={\"tableName\": \"main.partner.orders_out\"})`. What should the flow's `target` be?",
+   "o": ["`main.partner.orders_out`", "`export_sink`", "`delta`", "The name of the source streaming table"],
+   "c": 1,
+   "e": "`create_sink` registers a destination under a name. Flows refer to that sink name; the `tableName` option is only where the rows physically land."},
+  {"q": "You want to check that every row sent to a Delta sink has an `order_id`. Where do you put the rule?",
+   "o": ["`@dp.expect` on the append flow that writes to the sink", "A `CONSTRAINT ... EXPECT` clause in a SQL `CREATE SINK` statement", "An expectation on the streaming table that feeds the sink", "Nowhere: sinks reject NULL keys automatically"],
+   "c": 2,
+   "e": "Sinks do not support expectations, and there is no SQL sink syntax. Validate the rows on the managed table the flow reads from."},
+  {"q": "A sink has received 1,200 rows over two runs. Then someone runs a full refresh of the pipeline. What happens to the sink?",
+   "o": ["It is emptied and refilled with 1,200 rows", "Nothing: the flow checkpoint survives the full refresh", "The pipeline fails because sinks block full refreshes", "It is not emptied, and the reprocessed 1,200 rows are appended again"],
+   "c": 3,
+   "e": "A full refresh resets the pipeline's own datasets, but data already written to a sink is not cleaned up, so the reprocessed rows are appended again."},
+  {"q": "Why does the course write a silver streaming table to a Delta sink before enabling Iceberg reads?",
+   "o": ["Iceberg clients can only read tables created in Python", "The sink's target is a plain Delta table, so UniForm properties such as `delta.universalFormat.enabledFormats` can be set on it", "Sinks convert the data files to Iceberg format", "Streaming tables cannot be read by any engine outside the pipeline"],
+   "c": 1,
+   "e": "UniForm (Iceberg v2) cannot be enabled on pipeline streaming tables or materialized views, but a sink writes to an ordinary Delta table whose properties you control."},
+  {"q": "Which statement about sinks is true?",
+   "o": ["They are append only: each new source row becomes one new row in the target", "They support AUTO CDC to update rows in place", "They can be declared in SQL with `CREATE OR REFRESH SINK`", "They are owned by the pipeline and dropped when the pipeline is deleted"],
+   "c": 0,
+   "e": "Only append flows can write to a sink, the API is Python only, and the target lives outside the pipeline's managed scope."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A stream of readings is joined to the Delta table `devices`. Later someone updates the model of device 7. What happens to readings of device 7 that were already written to the sink?",
+   "o": ["They are rewritten with the new model in the next batch", "Nothing: they keep the old model, only new readings get the new one", "The query fails because the static table changed", "They are deleted and written again"],
+   "c": 1,
+   "e": "Each micro-batch joins its new rows to the latest version of the static table. A streaming join never goes back to rows it already wrote."},
+  {"q": "Why does a stream-stream join need state, while a stream-static join does not?",
+   "o": ["Because two streams always have different schemas", "Because the static table is cached in the state store", "It does not: both joins are stateless", "Because the matching row may arrive in a later batch on either side, so both sides must be buffered"],
+   "c": 3,
+   "e": "The static side is complete at every batch. With two streams, an order can arrive now and its payment minutes later, so Spark keeps rows of both sides until they can no longer match."},
+  {"q": "Orders and payments both have a 10-minute watermark and the condition `payment_ts BETWEEN order_ts AND order_ts + INTERVAL 15 MINUTES`. Order 2 is at 10:05 and its payment at 10:25. What does an inner join write for order 2?",
+   "o": ["One joined row", "One row with NULL payment columns", "Nothing: 10:25 is outside 10:05–10:20, so they never match", "It waits in state forever"],
+   "c": 2,
+   "e": "The time bound is part of the join condition. A payment 20 minutes after the order does not satisfy it, and once the watermark passes, the order leaves state without output."},
+  {"q": "In a left outer stream-stream join, when is an order without a matching payment written?",
+   "o": ["At once, in the batch where the order arrives", "Only when the query is stopped", "When the watermark passes the end of the order's time bound, so no payment can match any more", "Never: outer joins are not supported between streams"],
+   "c": 2,
+   "e": "Spark can only be sure there is no match once the watermark makes any matching payment impossible. That is also why outer stream-stream joins require watermarks and a time bound."},
+  {"q": "The orders stream has a watermark of 10:30 and the payments stream 10:45. Which watermark does the join use by default?",
+   "o": ["10:30, the minimum", "10:45, the maximum", "10:37:30, the average", "Each side keeps using only its own"],
+   "c": 0,
+   "e": "With several watermarked inputs, the global watermark is the minimum by default, so the slower stream does not have rows dropped too early. A `max` policy exists as a Spark setting."}
+]

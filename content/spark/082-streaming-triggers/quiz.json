@@ -1,0 +1,22 @@
+[
+  {"q": "A stream uses `trigger(processingTime=\"1 minute\")`. Batch 5 starts at 10:05:00 and runs for 80 seconds. When does batch 6 start?",
+   "o": ["At 10:06:00, in parallel with batch 5", "At 10:06:20, right after batch 5 ends", "At 10:07:00, the next boundary after batch 5 ends", "Two batches start at 10:06:20 to catch up"],
+   "c": 1,
+   "e": "When a batch misses the next interval boundary, the next batch starts as soon as the late one finishes. Batches of one query never overlap, and missed intervals are not replayed."},
+  {"q": "12 new files are waiting. You run `trigger(availableNow=True)` with `maxFilesPerTrigger = 5`. What happens?",
+   "o": ["One batch of 12 files, then the query stops", "Three batches (5, 5 and 2 files), then the query stops", "Three batches, then the query keeps waiting for new files", "One batch of 5 files; the rest wait for the next run"],
+   "c": 1,
+   "e": "availableNow processes everything that existed when it started, in as many batches as the size limits require, and then stops on its own."},
+  {"q": "Which trigger can a streaming query use on serverless compute?",
+   "o": ["`processingTime=\"10 seconds\"`", "No trigger (the default)", "`availableNow=True`", "`realTime=\"5 minutes\"`"],
+   "c": 2,
+   "e": "Serverless supports only `availableNow` (and the deprecated `once`). Always-on triggers need classic compute; real-time mode needs a dedicated classic cluster."},
+  {"q": "Why was `trigger(once=True)` replaced by `availableNow`?",
+   "o": ["`once` is slower because it waits for the next interval", "`once` ignores size limits such as `maxFilesPerTrigger` and builds one batch of everything", "`once` does not write a checkpoint", "`once` only works with Kafka"],
+   "c": 1,
+   "e": "Both process the available data and stop, but `once` does it in a single batch. availableNow splits a large backlog into batches that respect the rate limits."},
+  {"q": "A report must be at most 30 minutes old. Which setup is usually the cheapest?",
+   "o": ["An always-on stream with the default trigger", "`processingTime=\"30 minutes\"` on an always-on cluster", "A Lakeflow Job that runs the stream with `availableNow` every 15 minutes", "Real-time mode with a 30-minute interval"],
+   "c": 2,
+   "e": "This is incremental batch: the checkpoint still makes each run read only new data, but compute runs only during the job, and it works on serverless."}
+]

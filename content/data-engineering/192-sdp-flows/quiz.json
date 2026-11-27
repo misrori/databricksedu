@@ -1,0 +1,22 @@
+[
+  {"q": "A pipeline has run for months. In a code clean-up, the flow `web_flow` that appends into `orders_all` is renamed to `web_orders_flow`. What happens at the next update?",
+   "o": ["Nothing changes: the pipeline matches flows by their query", "The pipeline refuses to start until you run a full refresh", "The renamed flow starts with a new, empty checkpoint and appends the whole source again, creating duplicates", "The old checkpoint is renamed together with the flow"],
+   "c": 2,
+   "e": "The flow name is how the pipeline finds the checkpoint. A new name means no checkpoint, so the flow reads the source from the beginning and appends everything again."},
+  {"q": "What is the default (implicit) flow of `CREATE OR REFRESH STREAMING TABLE t AS SELECT * FROM STREAM(src)`?",
+   "o": ["A flow named `t`, created with the table, that writes the query's rows into `t`", "There is none: only `CREATE FLOW` creates flows", "A flow named `src`", "A one-time backfill flow"],
+   "c": 0,
+   "e": "Defining a table with a query creates the table and its flow in one step, and the flow takes the table's name."},
+  {"q": "Three sources feed one streaming table through a single `UNION ALL` query. A fourth source must be added. Why is the multi-flow pattern better here?",
+   "o": ["A UNION query cannot read streaming sources", "With one flow per source, only the new flow backfills; with the UNION, the changed query needs a full refresh of all sources", "Multi-flow tables need no checkpoints", "UNION queries cannot write to streaming tables"],
+   "c": 1,
+   "e": "A UNION is one flow with one checkpoint. Changing it means starting over for every source. Separate flows keep separate checkpoints, so a new flow only reads its own source."},
+  {"q": "You want every row from every flow into `orders_all` to have a positive `quantity`, dropping the rest. Where do you write the rule?",
+   "o": ["In each `CREATE FLOW` statement", "In a separate expectations file", "In the pipeline settings", "As `CONSTRAINT ... EXPECT ... ON VIOLATION DROP ROW` on the `orders_all` table definition"],
+   "c": 3,
+   "e": "Expectations cannot be defined on a flow. They live on the target table and apply to all flows that write into it."},
+  {"q": "Old orders exist as CSV exports and must be loaded into `orders_all` one time, next to the flows that keep running. What fits?",
+   "o": ["Add the files to the UNION query of the table", "A flow with `INSERT INTO ONCE` (or `@dp.append_flow(..., once=True)`)", "Rename an existing flow so it re-reads everything", "Set `pipelines.reset.allowed = false`"],
+   "c": 1,
+   "e": "A ONCE flow is a backfill: it runs one time instead of on every update, and the regular flows are not affected."}
+]

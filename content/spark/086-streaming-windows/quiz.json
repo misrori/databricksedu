@@ -1,0 +1,22 @@
+[
+  {"q": "With `window(\"event_ts\", \"10 minutes\", \"5 minutes\")`, which windows contain an event at 10:15?",
+   "o": ["10:05–10:15 and 10:10–10:20", "10:10–10:20 and 10:15–10:25", "10:10–10:20 only", "10:05–10:15, 10:10–10:20 and 10:15–10:25"],
+   "c": 1,
+   "e": "A window holds events with start <= event_ts < end. The end is exclusive, so 10:05–10:15 does not contain 10:15. With size 10 and slide 5, each event is in 2 windows."},
+  {"q": "A session window has a 5-minute gap. Events of one user arrive at 10:00, 10:03 and 10:11. What sessions result?",
+   "o": ["One session, 10:00–10:16", "10:00–10:08 and 10:11–10:16", "10:00–10:05, 10:03–10:08 and 10:11–10:16", "10:00–10:10 and 10:10–10:20"],
+   "c": 1,
+   "e": "A session ends one gap after its last event. 10:03 extends the first session to 10:08. 10:11 is after 10:08, so it starts a new session that ends at 10:16."},
+  {"q": "Your session time zone is UTC+2 and you group by `window(event_ts, \"1 day\")`. Where do the windows start when displayed?",
+   "o": ["At local midnight, 00:00", "At 02:00 local time, because windows are aligned to UTC", "At the time of the first event", "At the time the stream started"],
+   "c": 1,
+   "e": "Window boundaries are computed from the Unix epoch in UTC. Midnight UTC is 02:00 in UTC+2. Use startTime or a local date column if you need local days."},
+  {"q": "A stream runs `groupBy(F.window(\"event_ts\", \"1 hour\"), \"device_id\").count()` in update mode without a watermark. What happens to its state over months?",
+   "o": ["It stays small, because each window is only one hour long", "It grows forever: Spark never knows a window is complete, so it keeps every window", "Windows older than one hour are dropped automatically", "Spark refuses to start the query"],
+   "c": 1,
+   "e": "A window only gives Spark a time range it could close. Without a watermark no window is ever final, so every window stays in state. Update mode is allowed, so the query does start."},
+  {"q": "Which statement about session windows in a streaming query is true?",
+   "o": ["They need a fixed window size", "They support update mode but not append mode", "They need at least one grouping key besides the session window, and support append but not update mode", "The gap must be the same for every row"],
+   "c": 2,
+   "e": "Streaming session windows need another grouping column, such as a user or device id, and do not support update mode. The gap can be a per-row expression."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A windowed count with a watermark runs in append mode. A window has received rows for three batches but the watermark has not passed its end. What has been written to the sink for it?",
+   "o": ["Nothing yet", "Three rows, one per batch", "One row with the latest count", "One row with the count of the first batch"],
+   "c": 0,
+   "e": "Append mode writes a window once, in the first batch after the watermark passes the window end. Until then the row is not final and stays in state."},
+  {"q": "In one micro-batch, new events fall into 2 of the 40 windows held in state. How many rows does update mode write, and how many does complete mode write?",
+   "o": ["2 and 2", "40 and 40", "2 and 40", "0 and 40"],
+   "c": 2,
+   "e": "Update writes only the result rows that changed in this batch. Complete writes the whole result table every batch."},
+  {"q": "Which output mode does Spark refuse for `events.groupBy(F.window(\"event_ts\", \"10 minutes\")).count()` without a watermark?",
+   "o": ["update", "complete", "append", "none of them"],
+   "c": 2,
+   "e": "Without a watermark no window is ever final, so append mode could never write a row. Spark rejects the query when it starts. Update and complete are allowed."},
+  {"q": "You want update mode, and the result must be a Delta table whose rows change as windows fill up. How do you write it?",
+   "o": ["`.outputMode(\"update\").toTable(\"t\")`", "`.outputMode(\"update\").foreachBatch(fn)` where `fn` runs a `MERGE` into the table", "`.outputMode(\"complete\")` with a watermark, which removes old rows", "`.outputMode(\"append\")` with `mergeSchema`"],
+   "c": 1,
+   "e": "The Delta sink supports append and complete. An upsert of changed rows needs foreachBatch with MERGE on the window key."},
+  {"q": "A windowed count in complete mode has a 10-minute watermark and runs for a month. What happens to its state?",
+   "o": ["Windows older than the watermark are removed every batch", "It keeps every window forever and writes them all each batch", "It keeps only the last 10 minutes of windows", "Complete mode keeps no state"],
+   "c": 1,
+   "e": "Complete mode must repeat the whole result table, so the watermark cannot remove any window. State and output grow for as long as the stream runs."}
+]

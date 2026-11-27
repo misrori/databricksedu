@@ -19,8 +19,8 @@ Works on Databricks serverless and classic compute. No dependencies beyond what 
 
 | Track | Examples |
 |---|---|
-| 🛠️ Data Engineering | Lakehouse architecture, Parquet files, Medallion architecture, Anatomy of a Delta table, the transaction log, deletion vectors, MERGE, Change Data Feed, Spark joins and shuffles, Auto Loader, Structured Streaming, Declarative Pipelines, Lakeflow Jobs, Bundles and CI/CD |
-| 🔥 Apache Spark Programming | Driver, workers, shuffle and the DAG, reading and writing DataFrames, DataFrame ETL, aggregation, joins and set operations, window functions, complex types, Python UDFs, real-time mode, the Spark UI, Spark with Delta Lake, optimizing Spark code |
+| 🛠️ Data Engineering | Lakehouse architecture, Parquet files, Medallion architecture, Anatomy of a Delta table, the transaction log, deletion vectors, MERGE, Change Data Feed, Spark joins and shuffles, Auto Loader, Structured Streaming, Declarative Pipelines, flows and multiplex, sinks, advanced expectations, Lakeflow Jobs, Bundles and CI/CD |
+| 🔥 Apache Spark Programming | Driver, workers, shuffle and the DAG, reading and writing DataFrames, DataFrame ETL, aggregation, joins and set operations, window functions, complex types, Python UDFs, streaming triggers, output modes, windows, joins and monitoring, real-time mode, the Spark UI, Spark with Delta Lake, optimizing Spark code |
 | 🤖 Machine Learning | ML lifecycle, MLflow tracking, feature engineering, tuning, models in Unity Catalog, serving, monitoring |
 | ✨ Generative AI | How LLMs work, prompting, embeddings and Vector Search, chunking, RAG, agents, evaluation, AI Functions |
 | 📊 Analytics & AI/BI | SQL warehouses, AI/BI dashboards, Genie spaces, metric views |
@@ -49,7 +49,7 @@ databricksedu.save("data-engineering")         # a whole track, or save("all")
 
 Everything is also published as a website: **https://misrori.github.io/databricksedu/**. It has the same app
 (slides, notes, quizzes), the hand-made extras (the Delta Lake storyboard with a
-storage path decoder and a Delta table simulator, the Spark optimization storyboard, the Governance storyboard with six SQL labs, the Data preparation storyboard with a prep lab, the Databricks story, a broadcast
+storage path decoder and a Delta table simulator, the Spark optimization storyboard, the Governance storyboard with six SQL labs, the Data preparation storyboard with a prep lab, the Streaming storyboard with a stream lab, the Pipelines storyboard, the Databricks story, a broadcast
 hash join animation, an OPTIMIZE & VACUUM deck) and the Markdown of every module under `markdown/<module id>.md`. The website is rebuilt from `main` by
 `.github/workflows/pages.yml` (`python tools/build.py && python tools/site.py`).
 

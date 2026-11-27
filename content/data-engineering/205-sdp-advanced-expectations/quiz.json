@@ -1,0 +1,22 @@
+[
+  {"q": "A pipeline table has `CONSTRAINT valid_discount EXPECT (discount_pct BETWEEN 0 AND 100) ON VIOLATION DROP ROW`. What happens to a row with `discount_pct = NULL`?",
+   "o": ["It is kept, because NULL is not FALSE", "It is dropped and counted as a violation", "The update fails", "It is kept and the rule is skipped without a metric"],
+   "c": 1,
+   "e": "The rule evaluates to NULL, and a pipeline expectation treats a NULL result as a violation, so `DROP ROW` removes the row. Write `discount_pct IS NULL OR ...` if NULL is acceptable."},
+  {"q": "`shipping_cost` was added to the source last week. Which rule checks it without flagging every older row?",
+   "o": ["`shipping_cost BETWEEN 0 AND 100`", "`shipping_cost IS NOT NULL AND shipping_cost BETWEEN 0 AND 100`", "`CASE WHEN shipping_cost IS NOT NULL THEN shipping_cost BETWEEN 0 AND 100 ELSE TRUE END`", "`NOT (shipping_cost < 0 OR shipping_cost > 100)`"],
+   "c": 2,
+   "e": "Older rows hold NULL for the new column. The CASE form returns TRUE for them and checks the range only when a value is present. The other options return NULL or FALSE for older rows."},
+  {"q": "A quality table computes `is_quarantined = NOT (customer_id IS NOT NULL AND qty > 0)`. One row has a customer and `qty = NULL`. Where does it end up after the split on `is_quarantined = FALSE` / `= TRUE`?",
+   "o": ["In neither view, because the flag is NULL", "In the clean view", "In the quarantine view", "In both views"],
+   "c": 0,
+   "e": "`TRUE AND NULL` is NULL and `NOT NULL` is NULL, so neither filter matches. Write `qty IS NOT NULL AND qty > 0`, or wrap the flag in `coalesce(..., FALSE)` inside the NOT."},
+  {"q": "Why must the quarantine tracking table use only WARN expectations?",
+   "o": ["WARN is faster than DROP ROW", "Materialized views do not support DROP ROW", "WARN rows are moved to the quarantine view automatically", "With DROP ROW or FAIL UPDATE, bad rows would be removed or stop the update before they get the `is_quarantined` flag"],
+   "c": 3,
+   "e": "The pattern needs every row in the tracking table. WARN only records per-rule metrics; the routing is done by the inverse-logic flag and the two views."},
+  {"q": "A report table has the same row count as its source, yet one source order is missing. How is that possible, and which check finds it?",
+   "o": ["It is not possible if the counts are equal", "Another order is duplicated; a LEFT JOIN from the source finds the missing order and a GROUP BY ... HAVING count(*) > 1 finds the duplicate", "The count includes NULL rows; `count(DISTINCT *)` finds it", "The source changed during the query; rerunning the count finds it"],
+   "c": 1,
+   "e": "A lost row and a duplicate cancel out in a count. Missing-record and primary-key checks, each a materialized view with FAIL UPDATE, catch what the count check misses."}
+]

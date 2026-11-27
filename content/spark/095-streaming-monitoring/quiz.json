@@ -1,0 +1,22 @@
+[
+  {"q": "For many batches in a row, a query reports `inputRowsPerSecond` = 1,200 and `processedRowsPerSecond` = 1,000. What is happening?",
+   "o": ["Nothing: the processing rate only needs to be close to the input rate", "Rows arrive faster than they are processed, so a backlog builds up and latency grows", "The query is dropping 200 rows per second as late data", "The query is processing rows twice"],
+   "c": 1,
+   "e": "Input is what arrived per second, processed is how fast the batch worked through it. Below the input rate, unprocessed rows pile up from batch to batch."},
+  {"q": "A batch reports `numInputRows` = 8,412 and the sink reports `numOutputRows` = 120. Is something wrong?",
+   "o": ["Yes: 8,292 rows were lost", "Yes: the checkpoint is corrupt", "It depends on the trigger", "No: rows read and rows written differ, here 120 hourly windows became final"],
+   "c": 3,
+   "e": "`numInputRows` counts rows read from the source before any filter or aggregation. An aggregation writes one row per finished window, so far fewer rows reach the sink."},
+  {"q": "Which field shows whether the state of a windowed aggregation stays bounded?",
+   "o": ["`durationMs.walCommit`", "`sources[0].endOffset`", "`stateOperators[0].numRowsTotal` over many batches", "`batchId`"],
+   "c": 2,
+   "e": "`numRowsTotal` is the number of keys held in state after the batch. If it grows in every batch, nothing is being evicted, usually because there is no watermark."},
+  {"q": "A streaming query failed during the night. How do you find out why from the notebook that started it?",
+   "o": ["`q.exception()`, or catch the error that `q.awaitTermination()` raises", "`q.status` keeps the full stack trace", "`spark.streams.active` lists failed queries", "Read `q.lastProgress[\"error\"]`"],
+   "c": 0,
+   "e": "A stopped query keeps the error that ended it: `exception()` returns it (or None), and `awaitTermination()` raises it. `spark.streams.active` only lists running queries."},
+  {"q": "You run on serverless compute. Where do you read per-batch metrics such as the watermark and the state size?",
+   "o": ["In the Structured Streaming tab of the Spark UI", "In `q.recentProgress`, the list of the last progress reports", "Only in an external monitoring tool", "In the `_delta_log` of the sink table"],
+   "c": 1,
+   "e": "Serverless has no Spark UI. The query handle still gives you the same progress reports as the Structured Streaming tab shows on classic compute."}
+]

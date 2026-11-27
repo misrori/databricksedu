@@ -1,0 +1,22 @@
+[
+  {"q": "Five event types arrive on one Kafka topic. What is the main benefit of the multiplex pattern over five pipelines that each read the topic?",
+   "o": ["The topic is read once, with one checkpoint and one place for the source settings", "Each event type gets its own Kafka partition", "Bronze no longer needs a schema at all, so silver needs none either", "It removes the need for streaming tables"],
+   "c": 0,
+   "e": "Multiplex ingests the shared source once into bronze and fans out from there. Five readers would scan the topic five times and need five source checkpoints and five copies of the connection settings."},
+  {"q": "Bronze has a `payload VARIANT` column. Which expression returns the `order_id` field as a BIGINT?",
+   "o": ["`payload.order_id AS BIGINT`", "`payload:order_id::BIGINT`", "`payload->>'order_id'`", "`get_json_object(payload, 'order_id')`"],
+   "c": 1,
+   "e": "The `:` operator follows a path into a VARIANT and `::` casts the result. `variant_get(payload, '$.order_id', 'bigint')` is the function form."},
+  {"q": "One producer sends `\"qty\": \"two\"` instead of a number. The silver query uses `payload:qty::INT`. What happens, and what is the tolerant alternative?",
+   "o": ["The row gets qty 0; there is no alternative", "The value is silently converted to 2", "The cast raises an error and fails the update; `try_variant_get(payload, '$.qty', 'int')` returns NULL instead", "The row is moved to a quarantine table automatically"],
+   "c": 2,
+   "e": "A cast that does not fit raises an error. `try_variant_get` returns NULL, and an expectation on the target can count or drop those rows."},
+  {"q": "Bronze receives `refund` events, but no fan-out table filters on `refund`. What happens to them?",
+   "o": ["They are dropped at ingestion", "The pipeline update fails", "They are written to every fan-out table", "They stay in bronze, and a `mpx_refunds` table added later reads them from the start of bronze"],
+   "c": 3,
+   "e": "Bronze keeps every message. A new fan-out table has a new flow with an empty checkpoint, so its first update reads bronze from the beginning, including the old refunds."},
+  {"q": "Why is `pipelines.reset.allowed = false` especially important on a multiplex bronze table fed from Kafka?",
+   "o": ["It makes the fan-out tables run faster", "After the topic's retention has expired, bronze is the only full copy; a full refresh could not re-read the old messages", "It is required for VARIANT columns", "It lets several flows write into bronze"],
+   "c": 1,
+   "e": "A full refresh empties the table and re-reads the source. Kafka keeps messages only for its retention period, so old data would be lost for every event type at once."}
+]

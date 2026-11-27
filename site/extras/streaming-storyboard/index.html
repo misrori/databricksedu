@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Streaming storyboard · databricksedu</title>
+<meta name="description" content="An interactive storyboard about Spark Structured Streaming: the unbounded table, micro-batches and checkpoints, triggers on a time axis, stateless and stateful queries, event time, tumbling, sliding and session windows, watermarks, what append, update and complete output modes write batch by batch, streaming joins and monitoring, with a stream lab.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../delta-storyboard/style.css">
+<link rel="stylesheet" href="../optimization-storyboard/opt.css">
+<link rel="stylesheet" href="../governance-storyboard/gov.css">
+<link rel="stylesheet" href="stream.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G"/></filter>
+</svg>
+
+<header class="top">
+  <h1>The <span>Streaming</span> storyboard</h1>
+  <div class="sub">Rows keep arriving. <b>When</b> does Spark process them (triggers), <b>which window</b> do they belong to (event time), <b>when is a window final</b> (watermark), and <b>what is written</b> (output modes)? One small simulator per frame. Click a frame or the 🧪 lab, or press <b>Present</b>. <b>F</b>: full screen.</div>
+  <span id="score" title="Questions answered correctly">🎯 0 / 0</span>
+  <button class="pill sk thin" id="bReset" title="Forget progress, answers and the lab">↺ Reset</button>
+  <button class="pill primary" id="bPresent">▶ Present</button>
+</header>
+
+<main id="board">
+  <div id="canvas"></div>
+  <div class="zoom">
+    <button id="zout" title="Zoom out">−</button><span id="zoomv">100%</span><button id="zin" title="Zoom in">+</button>
+    <button id="zfit" title="Fit the whole board">⤢ fit</button><button id="zlayout" title="Put the frames back where they were">↺ layout</button>
+  </div>
+  <div class="boardhint">drag the background to move · drag a frame to rearrange · ctrl + scroll or pinch to zoom</div>
+</main>
+
+<div id="win" role="dialog" aria-modal="true">
+  <div class="window">
+    <div class="wbar">
+      <div class="dots"><i id="wClose" title="Close"></i><i></i><i></i></div>
+      <div class="wt" id="wTitle"></div>
+      <button id="wPrevScene" title="Previous frame">◀ frame</button>
+      <button id="wNextScene" title="Next frame">frame ▶</button>
+      <button id="wX" title="Close (Esc)">✕</button>
+    </div>
+    <div class="wbody" id="wBody"></div>
+    <div class="wfoot">
+      <button class="btn" id="sPrev">← Back</button>
+      <div class="steps" id="sDots"></div>
+      <button class="btn acc" id="sNext">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script src="engine.js"></script>
+<script src="lab.js"></script>
+<script src="../_shared/storyboard.js"></script>
+<script src="scenes1.js"></script>
+<script src="scenes2.js"></script>
+<script src="board.js"></script>
+<script src="../_shared/fullscreen.js"></script>
+<script src="../_shared/back.js"></script>
+</body>
+</html>
