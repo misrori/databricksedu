@@ -88,38 +88,63 @@
     ['update', '✏️ update', 'Write only the windows that <b>changed</b> in this batch.'],
     ['complete', '📋 complete', 'Write the <b>whole result</b> every batch. Keeps all state forever.']];
   SC.push({
-    id: 'modes', icon: '📤', title: 'Output modes, batch by batch', sub: 'One windowed count, three sinks. What does each mode write after every micro-batch, and what is in the table?',
+    id: 'modes', icon: '📤', title: 'Output modes, batch by batch', sub: 'Orders arrive batch by batch. Revenue per store and window: what does the sink table look like in append, update and complete mode?',
     thumb: '<div class="th-modes"><span><b>append</b>once</span><span><b>update</b>changes</span><span><b>complete</b>all</span></div>',
     steps: [
       function (el) {
-        var box = h(title('Same query, <em>three output modes</em>', 'count(*) per 10-minute window, watermark 10 minutes. Step through the batches. Yellow rows = written in this batch.') +
-          '<div class="ctl"><span class="bsel" id="obs"></span><label class="toggle"><input type="checkbox" id="owm" checked><span class="sw"></span> withWatermark("event_time", "10 minutes")</label></div>' +
-          '<div class="row" id="orow"></div><div class="grid3 mt" id="ocols"></div><div class="verdict" id="ov"></div>');
+        var box = h(title('New orders in, <em>three result tables</em> out') +
+          '<div class="ctl"><span class="bsel" id="obs"></span><label class="toggle"><input type="checkbox" id="owm" checked><span class="sw"></span> with watermark (10 min)</label></div>' +
+          '<div class="omtop"><div><div class="lbl2">📥 input: orders <small>(the stream, all rows so far)</small></div><table class="dt2 mini oin" id="oin"></table><div class="small" id="ofn"></div></div>' +
+          '<div><div id="okv" class="row" style="gap:6px"></div><div id="ocode" class="ocode"></div><div class="verdict" id="ov" style="margin-top:6px;font-size:15.5px"></div></div></div>' +
+          '<div class="grid3 mt" id="ocols"></div>');
         el.appendChild(box);
         var b = 0;
         var NOTE = [
-          'Batch 1: window 10:00–10:10 opens with 2 orders. <b>update</b> and <b>complete</b> write it at once. <b>append</b> writes nothing: the window could still change.',
-          'Batch 2: a late 10:04 row updates 10:00–10:10, and 10:10–10:20 opens. <b>update</b> writes exactly those two rows. <b>complete</b> rewrites everything.',
-          'Batch 3: another late row (10:09) arrives while 10:00–10:10 is still open, so it is still counted. Still nothing final, still nothing in <b>append</b>.',
-          'Batch 4: the watermark (10:13) has passed 10:10. <b>append</b> finally writes 10:00–10:10 = 4, once. The 10:06 row is too late and dropped… except in <b>complete</b> mode, which ignores the watermark and counts it (5).',
-          'Batch 5: 10:10–10:20 becomes final and is appended. <b>update</b> writes only the changed 10:30–10:40. <b>complete</b> rewrites all four windows, as in every batch.'
+          '<b>Batch 1.</b> Two orders, two groups: Budapest and Vienna in window 10:00–10:10. <b>update</b> and <b>complete</b> write both rows at once. <b>append</b> writes nothing: these windows could still change.',
+          '<b>Batch 2.</b> A Vienna order from 10:04 arrives 12 minutes late, but its window is still open: Vienna 10:00 goes from 1 to 2 orders. Budapest opens 10:10–10:20. <b>update</b> writes only the 2 rows that changed; <b>complete</b> rewrites all 3.',
+          '<b>Batch 3.</b> Budapest 10:09 is late too, still counted (watermark 10:05 is before the window end 10:10). <b>update</b>: 2 changed rows. <b>append</b>: still nothing final.',
+          '<b>Batch 4.</b> The watermark 10:13 has passed 10:10: both 10:00–10:10 windows are <b>final</b>. <b>append</b> writes them now, once, and Spark deletes their state. The Vienna 10:06 order (€60) is too late and dropped… except in <b>complete</b> mode, which ignores the watermark: there Vienna 10:00 = 3 orders, €100.',
+          '<b>Batch 5.</b> Watermark 10:21 closes Budapest 10:10–10:20: <b>append</b> adds it. <b>update</b> writes the one new row. <b>complete</b> rewrites all 7 rows, as in every batch.'
         ];
+        var NAMES = { a: 1001, b: 1002, c: 1003, d: 1004, e: 1005, f: 1006, g: 1007, h: 1008, i: 1009, j: 1010, k: 1011 };
+        var MODE3 = [['append', '➕ append', 'Writes a group <b>once</b>, when its window is final.'], ['update', '✏️ update', 'Writes only the groups that <b>changed</b> in this batch.'], ['complete', '📋 complete', 'Rewrites the <b>whole result</b> every batch.']];
+        var k2 = function (w) { return w.start + '|' + w.key; };
+        function sinkTable(r, prev, mode) {
+          var em = {}; r.emitted.forEach(function (w) { em[k2(w)] = 1; });
+          var old = {}; (prev ? prev.sink : []).forEach(function (w) { old[k2(w)] = w; });
+          if (!r.sink.length) return '<div class="empty">empty table</div>';
+          return '<table class="dt2 mini"><tr><th>window</th><th>store</th><th>orders</th><th>revenue</th></tr>' + r.sink.map(function (w) {
+            var o = old[k2(w)], hit = em[k2(w)], chg = function (a, b2, pre) { return o && a !== b2 && hit ? '<s>' + pre + a + '</s> → <b>' + pre + b2 + '</b>' : pre + b2; };
+            var cls = hit ? (mode === 'complete' && o && o.count === w.count && o.sum === w.sum ? 'rw' : 'hl fresh') : '';
+            return '<tr class="' + cls + '"><td>' + E.wlabel(w) + '</td><td>' + w.key + '</td><td class="num">' + chg(o && o.count, w.count, '') + '</td><td class="num">' + chg(o && o.sum, w.sum, '€') + '</td></tr>';
+          }).join('') + '</table>';
+        }
         function draw() {
-          var wm = box.querySelector('#owm').checked, delay = wm ? 10 : null;
-          var res = {}; MODES.forEach(function (m) { res[m[0]] = E.simulate({ events: E.SCRIPT, win: TUMB, delay: delay, mode: m[0] }); });
-          box.querySelector('#obs').innerHTML = res.update.map(function (x, i) { return '<button data-b="' + i + '" class="' + (i === b ? 'on' : i < b ? 'past' : '') + '">batch ' + (i + 1) + '</button>'; }).join('');
+          var wm = box.querySelector('#owm').checked, delay = wm ? 10 : null, res = {};
+          MODE3.forEach(function (m) { res[m[0]] = E.simulate({ events: E.SCRIPT, win: TUMB, delay: delay, mode: m[0], byKey: true }); });
+          box.querySelector('#obs').innerHTML = res.update.map(function (x, i) { return '<button data-b="' + i + '" class="' + (i === b ? 'on' : i < b ? 'past' : '') + '">batch ' + (i + 1) + ' <small>' + fmt(E.BATCH_AT[i]) + '</small></button>'; }).join('');
           box.querySelectorAll('#obs button').forEach(function (n) { n.onclick = function () { b = +n.dataset.b; draw(); }; });
           var u = res.update[b];
-          box.querySelector('#orow').innerHTML = '<span class="note" style="font-size:20px">arriving:</span> ' + rowChips(u) + (wm ? ' <span class="kv wm">watermark in this batch <b>' + fmt(u.wmBefore) + '</b></span>' : ' <span class="kv">no watermark: no window is ever final</span>');
-          box.querySelector('#ocols').innerHTML = MODES.map(function (m) {
-            var r = res[m[0]][b], isNew = function (w) { return r.emitted.some(function (x) { return x.start === w.start && x.count === w.count; }); };
-            if (r.err) return '<div class="mcol bad ' + m[0] + '"><h4>' + m[1] + '</h4><div class="sub2">' + m[2] + '</div><div class="errx">AnalysisException: Append output mode not supported when there are streaming aggregations on streaming DataFrames/DataSets without watermark</div><div class="small">The query does not even start: without a watermark no window is ever final, so append would never write anything.</div></div>';
-            return '<div class="mcol ' + m[0] + '"><h4>' + m[1] + '</h4><div class="sub2">' + m[2] + '</div>' +
-              '<div class="lbl">written in batch ' + (b + 1) + '</div>' + wtbl(r.emitted, { empty: 'nothing written', hl: function () { return true; } }) +
-              '<div class="lbl">the sink table now' + (m[0] === 'update' ? ' <small style="font-family:var(--body);font-size:12px;color:var(--soft)">(foreachBatch + MERGE)</small>' : m[0] === 'complete' ? ' <small style="font-family:var(--body);font-size:12px;color:var(--soft)">(overwritten)</small>' : '') + '</div>' + wtbl(r.sink, { empty: 'empty table', hl: isNew }) +
-              '<div class="small">rows written so far: <b>' + res[m[0]].slice(0, b + 1).reduce(function (a, x) { return a + x.emitted.length; }, 0) + '</b> · windows in state: <b>' + r.state.length + '</b></div></div>';
+          box.querySelector('#okv').innerHTML = wm ? '<span class="kv wm">watermark used <b>' + fmt(u.wmBefore) + '</b></span><span class="kv wm">next <b>' + fmt(u.wmAfter) + '</b></span>' : '<span class="kv">no watermark: no window is ever final</span>';
+          var verdict = {}; res.update.forEach(function (x) { x.rows.forEach(function (v) { verdict[v.e.id] = v.ok; }); });
+          var rows = E.SCRIPT.filter(function (e) { return e.b <= b; }).sort(function (x, y) { return x.b - y.b || x.at - y.at; });
+          box.querySelector('#oin').innerHTML = '<tr><th>order_id</th><th>event_time</th><th>arrived</th><th>store</th><th>amount</th><th></th></tr>' + rows.map(function (e) {
+            var late = e.at - e.et >= 10, cur = e.b === b, ok = verdict[e.id];
+            var tag = !ok && wm ? '<span class="otag od">dropped*</span>' : late ? '<span class="otag ol">' + (e.at - e.et) + ' min late</span>' : '';
+            return '<tr class="' + (cur ? 'cur fresh' : 'old') + '"><td>' + NAMES[e.id] + '</td><td><b>' + fmt(e.et) + '</b></td><td>' + fmt(e.at) + '</td><td>' + e.key + '</td><td class="num">€' + e.amount + '</td><td>' + tag + '</td></tr>';
           }).join('');
-          box.querySelector('#ov').innerHTML = wm ? NOTE[b] : 'Without a watermark: <b>append</b> is not allowed, and <b>update</b> and <b>complete</b> never drop state, so every window stays in memory forever, and the 10:06 row is counted (5).';
+          box.querySelector('#ofn').innerHTML = wm && rows.some(function (e) { return !verdict[e.id]; }) ? '* dropped in append and update; complete mode ignores the watermark and counts it.' : '';
+          box.querySelector('#ocode').innerHTML = code('(orders' + (wm ? '\n   .withWatermark("event_time", "10 minutes")' : '') + '\n   .groupBy(F.window("event_time", "10 minutes"), "store")\n   .agg(F.count("*").alias("orders"),\n        F.sum("amount").alias("revenue")))', 'py');
+          box.querySelector('#ocols').innerHTML = MODE3.map(function (m) {
+            var all = res[m[0]], r = all[b];
+            if (r.err) return '<div class="mcol bad ' + m[0] + '"><h4>' + m[1] + '</h4><div class="sub2">' + m[2] + '</div><div class="errx">AnalysisException: Append output mode not supported when there are streaming aggregations on streaming DataFrames/DataSets without watermark</div><div class="small">Without a watermark no window is ever final, so append could never write anything. Spark refuses to start.</div></div>';
+            var n = r.emitted.length;
+            return '<div class="mcol ' + m[0] + '"><h4>' + m[1] + '</h4><div class="sub2">' + m[2] + '</div>' +
+              '<div class="wrote ' + (n ? 'y' : '') + '">batch ' + (b + 1) + ' wrote <b>' + n + '</b> row' + (n === 1 ? '' : 's') + (m[0] === 'complete' && n ? ' (the whole table)' : '') + '</div>' +
+              '<div class="lbl">the sink table after batch ' + (b + 1) + '</div>' + sinkTable(r, all[b - 1], m[0]) +
+              '<div class="small">groups still in state: <b>' + r.state.length + '</b>' + (m[0] === 'append' ? ' · waiting to be final' : m[0] === 'complete' ? ' · never removed' : '') + '</div></div>';
+          }).join('');
+          box.querySelector('#ov').innerHTML = wm ? NOTE[b] : 'Without a watermark nothing is ever final: <b>append</b> is refused, <b>update</b> and <b>complete</b> keep every group in state forever, and the late Vienna 10:06 order is counted.';
         }
         box.querySelector('#owm').onchange = draw;
         draw();

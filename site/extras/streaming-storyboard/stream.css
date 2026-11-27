@@ -157,3 +157,25 @@ svg.tl .cur { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 3; }
 .wchip { display: inline-block; font-size: 12.5px; border: 1.5px solid var(--ink); border-radius: 8px; padding: 1px 7px; margin: 2px; background: #fff; }
 .wchip.ok { border-color: var(--green); background: #e7f6ec; } .wchip.bad { border-color: var(--drop); background: #fde9e6; }
 .slside pre.code { font-size: 12px; white-space: pre; overflow-x: auto; }
+
+/* ── output modes: input table + three sinks ── */
+.omtop { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .omtop { grid-template-columns: 1fr; } }
+.lbl2 { font-family: var(--hand); font-size: 22px; color: var(--accent); margin: 0 0 4px; }
+.lbl2 small { font-family: var(--body); font-size: 13px; color: var(--soft); }
+table.oin tr.old td { color: #8f897c; }
+table.oin tr.cur td { background: #fff1c9; font-weight: 600; }
+table.oin small { color: var(--soft); font-weight: 400; }
+.otag { font-size: 11.5px; border-radius: 7px; padding: 1px 6px; white-space: nowrap; }
+.otag.ol { background: #fff6dc; color: #8a5a00; border: 1px solid var(--late); }
+.otag.od { background: #fde9e6; color: #9b3a30; border: 1px solid var(--drop); }
+.bsel button small { font-size: 11px; opacity: .75; }
+.wrote { font-size: 14.5px; margin: 2px 0 2px; color: var(--soft); }
+.wrote.y { color: var(--ink); } .wrote.y b { color: var(--accent); font-size: 17px; }
+table.dt2 tr.rw td { background: #f4f0ff; }
+table.dt2 td s { color: #b0a898; }
+.omtop { grid-template-columns: 1.25fr 1fr; }
+.ocode pre.code { font-size: 12px; padding: 8px 10px; margin: 6px 0 0; }
+table.oin td, table.oin th { padding: 3px 7px; }
+.mcol .sub2 { min-height: 0; }
+.mcol .lbl { margin-top: 2px; }
