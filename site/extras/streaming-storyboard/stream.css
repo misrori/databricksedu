@@ -32,7 +32,7 @@
 .kv.wm { border-color: var(--teal); } .kv.wm b { color: var(--teal); }
 .evc { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 13px; border: 2px solid var(--ontime); background: #eef5fc; border-radius: 9px; padding: 2px 8px; margin: 2px; white-space: nowrap; }
 .evc.late { border-color: var(--late); background: #fff6dc; }
-.evc.drop { border-color: var(--drop); background: #fde9e6; text-decoration: line-through; color: #9b3a30; }
+.evc.dr { border-color: var(--drop); background: #fde9e6; text-decoration: line-through; color: #9b3a30; }
 .evc small { font-family: var(--body); color: var(--soft); font-size: 12px; }
 .evc.new { animation: evpop .6s ease-out; }
 @keyframes evpop { 0% { transform: scale(1.35); box-shadow: 0 0 0 6px rgba(209,104,46,.25); } 100% { transform: none; } }
@@ -58,7 +58,7 @@ svg.tl .tick { stroke: #b9b2a3; stroke-width: 1; }
 svg.tl .tk { font-size: 12px; fill: #6e685c; font-family: var(--mono); }
 svg.tl .lane { font-family: var(--hand); font-size: 19px; fill: #8f897c; }
 svg.tl .ev { fill: var(--ontime); stroke: #fff; stroke-width: 1.5; transition: all .3s; }
-svg.tl .ev.late { fill: var(--late); } svg.tl .ev.drop { fill: var(--drop); }
+svg.tl .ev.late { fill: var(--late); } svg.tl .ev.dr { fill: var(--drop); }
 svg.tl .ev.ghost { fill: #d8d2c4; }
 svg.tl .ev.sel { stroke: var(--ink); stroke-width: 3; }
 svg.tl .evl { font-family: var(--mono); font-size: 10.5px; fill: #5b564c; }
@@ -179,3 +179,20 @@ table.dt2 td s { color: #b0a898; }
 table.oin td, table.oin th { padding: 3px 7px; }
 .mcol .sub2 { min-height: 0; }
 .mcol .lbl { margin-top: 2px; }
+/* two-clock timeline in the output modes frame */
+svg.tl .twin { fill: #fbf8f1; stroke: #d9d1bd; stroke-width: 1.5; }
+svg.tl .twin.open { fill: #efe9ff; stroke: var(--stv); }
+svg.tl .twin.fin { fill: #e7f6ec; stroke: var(--green); }
+svg.tl .tbat { fill: #fbf8f1; stroke: #d9d1bd; stroke-width: 1.5; }
+svg.tl .tbat.past { fill: #f4f1ea; }
+svg.tl .tbat.now { fill: #fff1e6; stroke: var(--accent); stroke-width: 2.5; }
+svg.tl .tbt { font-family: var(--mono); font-size: 11px; fill: #8f897c; }
+svg.tl .tbt.now { fill: var(--accent); font-weight: 700; }
+svg.tl .tlk { stroke: #9fb9d6; stroke-width: 1.8; fill: none; }
+svg.tl .tlk.old { stroke: #e1dacb; stroke-width: 1.2; }
+svg.tl .tlk.late { stroke: var(--late); stroke-width: 2.5; }
+svg.tl .tlk.drop { stroke: var(--drop); stroke-width: 2.5; stroke-dasharray: 5 4; }
+svg.tl .wmn { stroke: var(--teal); stroke-width: 1.6; stroke-dasharray: 2 4; opacity: .7; }
+svg.tl .wmnt { font-family: var(--hand); font-size: 16px; fill: var(--teal); opacity: .8; }
+svg.tl .ev.dr { fill: var(--drop); }
+svg.tl .tlk.dr { stroke: var(--drop); stroke-width: 2.5; stroke-dasharray: 5 4; }

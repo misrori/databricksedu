@@ -27,14 +27,14 @@
     });
     g += '<line class="ax" x1="' + x0 + '" y1="60" x2="' + x1 + '" y2="60"/>';
     (o.past || []).forEach(function (e) { g += '<circle class="ev ghost" cx="' + X(e.et) + '" cy="60" r="6"/>'; });
-    rec.rows.forEach(function (v) { g += '<circle class="ev ' + (!v.ok ? 'drop' : v.e.at - v.e.et >= 10 ? 'late' : '') + '" cx="' + X(v.e.et) + '" cy="60" r="9"/><text class="evl" x="' + X(v.e.et) + '" y="44" text-anchor="middle">' + fmt(v.e.et) + '</text>'; });
+    rec.rows.forEach(function (v) { g += '<circle class="ev ' + (!v.ok ? 'dr' : v.e.at - v.e.et >= 10 ? 'late' : '') + '" cx="' + X(v.e.et) + '" cy="60" r="9"/><text class="evl" x="' + X(v.e.et) + '" y="44" text-anchor="middle">' + fmt(v.e.et) + '</text>'; });
     if (rec.maxEt > E.NEG / 2) g += '<text class="tk" x="' + X(rec.maxEt) + '" y="78" text-anchor="middle">▲ max</text>';
     return '<svg class="tl" viewBox="0 0 ' + W + ' 172">' + g + '</svg>';
   }
   function rowChips(rec) {
     return rec.rows.map(function (v) {
       var late = v.e.at - v.e.et >= 10;
-      return '<span class="evc ' + (!v.ok ? 'drop' : late ? 'late' : '') + ' new">' + fmt(v.e.et) + ' <small>' + (!v.ok ? 'dropped: window closed' : late ? (v.e.at - v.e.et) + ' min late, still counted' : 'on time') + '</small></span>';
+      return '<span class="evc ' + (!v.ok ? 'dr' : late ? 'late' : '') + ' new">' + fmt(v.e.et) + ' <small>' + (!v.ok ? 'dropped: window closed' : late ? (v.e.at - v.e.et) + ' min late, still counted' : 'on time') + '</small></span>';
     }).join('');
   }
   var ALLW = [0, 10, 20, 30].map(function (s) { return { start: s, end: s + 10 }; });
@@ -96,7 +96,7 @@
           '<div class="ctl"><span class="bsel" id="obs"></span><label class="toggle"><input type="checkbox" id="owm" checked><span class="sw"></span> with watermark (10 min)</label></div>' +
           '<div class="omtop"><div><div class="lbl2">📥 input: orders <small>(the stream, all rows so far)</small></div><table class="dt2 mini oin" id="oin"></table><div class="small" id="ofn"></div></div>' +
           '<div><div id="okv" class="row" style="gap:6px"></div><div id="ocode" class="ocode"></div><div class="verdict" id="ov" style="margin-top:6px;font-size:15.5px"></div></div></div>' +
-          '<div class="grid3 mt" id="ocols"></div>');
+          '<div id="otl" class="mt"></div><div class="grid3" id="ocols"></div>');
         el.appendChild(box);
         var b = 0;
         var NOTE = [
@@ -118,6 +118,60 @@
             var cls = hit ? (mode === 'complete' && o && o.count === w.count && o.sum === w.sum ? 'rw' : 'hl fresh') : '';
             return '<tr class="' + cls + '"><td>' + E.wlabel(w) + '</td><td>' + w.key + '</td><td class="num">' + chg(o && o.count, w.count, '') + '</td><td class="num">' + chg(o && o.sum, w.sum, '€') + '</td></tr>';
           }).join('') + '</table>';
+        }
+        // two clocks: event time on top (windows + watermark), processing time below (batches)
+        var prevWm = null;
+        function timeline(res, wm) {
+          var u = res.update[b], W = 1000, x0 = 120, x1 = W - 20, T0 = -5, T1 = 52, X = function (t) { return x0 + (t - T0) / (T1 - T0) * (x1 - x0); };
+          var yE = 56, yP = 176, g = '';
+          // windows on the event-time axis
+          [0, 10, 20, 30, 40].forEach(function (s) {
+            var fin = wm && s + 10 <= u.wmBefore, open = res.update[b].state.some(function (w) { return w.start === s; });
+            g += '<rect x="' + (X(s) + 1) + '" y="' + (yE - 22) + '" width="' + (X(s + 10) - X(s) - 2) + '" height="44" rx="7" class="twin' + (fin ? ' fin' : open ? ' open' : '') + '"/>';
+            g += '<text class="tk" x="' + X(s + 5) + '" y="' + (yE - 27) + '" text-anchor="middle">' + fmt(s) + '–' + fmt(s + 10) + (fin ? ' ✅ final' : '') + '</text>';
+          });
+          // batches on the processing-time axis
+          E.BATCH_AT.forEach(function (t, i) {
+            var cur = i === b, from = i ? E.BATCH_AT[i - 1] : 0;
+            g += '<rect x="' + (X(from) + 1) + '" y="' + (yP - 14) + '" width="' + (X(t) - X(from) - 2) + '" height="28" rx="6" class="tbat' + (cur ? ' now' : i < b ? ' past' : '') + '"/>';
+            g += '<text class="tbt' + (cur ? ' now' : '') + '" x="' + X(t) + '" y="' + (yP + 32) + '" text-anchor="middle">▲ batch ' + (i + 1) + ' runs ' + fmt(t) + '</text>';
+          });
+          g += '<line class="ax" x1="' + x0 + '" y1="' + yE + '" x2="' + x1 + '" y2="' + yE + '"/><line class="ax" x1="' + x0 + '" y1="' + yP + '" x2="' + x1 + '" y2="' + yP + '"/>';
+          g += '<text class="lane" x="4" y="' + (yE + 6) + '">event time</text><text class="lane" x="4" y="' + (yE + 24) + '" style="font-size:14px">when it happened</text>';
+          g += '<text class="lane" x="4" y="' + (yP + 6) + '">processing</text><text class="lane" x="4" y="' + (yP + 24) + '" style="font-size:14px">when it arrived</text>';
+          var verdict = {}; res.update.forEach(function (x) { x.rows.forEach(function (v) { verdict[v.e.id] = v.ok; }); });
+          var evs = E.SCRIPT.filter(function (e) { return e.b <= b; });
+          evs.forEach(function (e) {
+            var cur = e.b === b, late = e.at - e.et >= 10, drop = wm && !verdict[e.id];
+            var c = !cur ? 'old' : drop ? 'dr' : late ? 'late' : '';
+            g += '<path class="tlk ' + c + '" d="M' + X(e.et) + ' ' + yE + ' L' + X(e.at) + ' ' + yP + '"/>';
+          });
+          evs.forEach(function (e) {
+            var cur = e.b === b, late = e.at - e.et >= 10, drop = wm && !verdict[e.id];
+            var c = 'ev ' + (!cur ? 'ghost' : drop ? 'dr' : late ? 'late' : '');
+            g += '<circle class="' + c + '" cx="' + X(e.et) + '" cy="' + yE + '" r="' + (cur ? 8 : 6) + '"/><circle class="' + c + '" cx="' + X(e.at) + '" cy="' + yP + '" r="' + (cur ? 8 : 6) + '"/>';
+            if (cur) g += '<text class="evl" x="' + X(e.et) + '" y="' + (yE + 36) + '" text-anchor="middle">' + fmt(e.et) + ' ' + e.key.slice(0, 3) + '</text>';
+          });
+          // the watermark: an event-time value, used in this batch; animated from where it was
+          var wmLayer = '';
+          if (wm && u.wmBefore > E.NEG / 2) {
+            wmLayer = '<g class="wmg" id="wmg"><rect class="wmz" x="' + (x0 - X(u.wmBefore)) + '" y="' + (yE - 34) + '" width="' + (X(u.wmBefore) - x0) + '" height="68"/>' +
+              '<line class="wm" x1="0" y1="' + (yE - 38) + '" x2="0" y2="' + (yP - 20) + '"/><text class="wmt" x="6" y="' + (yP - 26) + '">watermark ' + fmt(u.wmBefore) + '</text></g>';
+          }
+          if (wm && u.wmAfter > E.NEG / 2 && u.wmAfter !== u.wmBefore) {
+            g += '<line x1="' + X(u.wmAfter) + '" y1="' + (yE - 38) + '" x2="' + X(u.wmAfter) + '" y2="' + (yE + 70) + '" class="wmn"/><text class="wmnt" x="' + (X(u.wmAfter) + 4) + '" y="' + (yE + 66) + '">next watermark ' + fmt(u.wmAfter) + '</text>';
+          }
+          if (u.maxEt > E.NEG / 2) g += '<text class="tk" x="' + X(u.maxEt) + '" y="' + (yE + 50) + '" text-anchor="middle">▲ max event time ' + fmt(u.maxEt) + '</text>';
+          var cap = wm ? 'The watermark is measured on the <b>event-time</b> axis: max event time seen − 10 min. It is computed at the end of a batch and used by the next one. Windows left of it are final.' :
+            'No watermark: Spark never knows a window is complete, so every window stays open.';
+          box.querySelector('#otl').innerHTML = '<svg class="tl" viewBox="0 0 ' + W + ' 222">' + g + wmLayer + '</svg><div class="small" style="margin:0 0 6px">' + cap + '</div>';
+          var gEl = box.querySelector('#wmg');
+          if (gEl) {
+            var to = X(u.wmBefore), from = prevWm === null ? to : prevWm;
+            gEl.style.transform = 'translateX(' + from + 'px)';
+            requestAnimationFrame(function () { requestAnimationFrame(function () { gEl.style.transition = 'transform .9s ease'; gEl.style.transform = 'translateX(' + to + 'px)'; }); });
+            prevWm = to;
+          } else prevWm = null;
         }
         function draw() {
           var wm = box.querySelector('#owm').checked, delay = wm ? 10 : null, res = {};
@@ -144,6 +198,7 @@
               '<div class="lbl">the sink table after batch ' + (b + 1) + '</div>' + sinkTable(r, all[b - 1], m[0]) +
               '<div class="small">groups still in state: <b>' + r.state.length + '</b>' + (m[0] === 'append' ? ' · waiting to be final' : m[0] === 'complete' ? ' · never removed' : '') + '</div></div>';
           }).join('');
+          timeline(res, wm);
           box.querySelector('#ov').innerHTML = wm ? NOTE[b] : 'Without a watermark nothing is ever final: <b>append</b> is refused, <b>update</b> and <b>complete</b> keep every group in state forever, and the late Vienna 10:06 order is counted.';
         }
         box.querySelector('#owm').onchange = draw;
