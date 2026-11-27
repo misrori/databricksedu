@@ -530,7 +530,9 @@
     else if (a === 'up') { var fname = 'upload_' + (counters.up++) + '.csv'; n = addFile(cwd, fname, 'id,value\n1,42\n2,17\n…', 1200 + counters.up * 37, { fresh: true, sim: true }); note("-- Catalog Explorer → Upload to volume, or:\ndbutils.fs.cp('file:/tmp/" + fname + "', '/Volumes/<catalog>/<schema>/<volume>/" + (ui.cwd.slice((r.ctx.objAt || 0) + 1).concat(fname).join('/')) + "')", 'The file landed in this folder byte for byte. Same name under /Volumes and in the bucket.'); }
     else if (a === 'mk') { var d = 'folder_' + (counters.up++); child(cwd, d, true, { sim: true, fresh: true }); note("dbutils.fs.mkdirs('/Volumes/<catalog>/<schema>/<volume>/" + ui.cwd.slice((r.ctx.objAt || 0) + 1).concat(d).join('/') + "')", 'A new folder inside the volume.'); }
     else if (a === 'ct' || a === 'cv') {
-      var lvl = at(root, levelSegs), dirName = a === 'ct' ? 'tables' : 'volumes', dirN = child(lvl, dirName, true, { kind: dirName + 'dir' });
+      var lvl = at(root, levelSegs);
+      if (!lvl) return;
+      var dirName = a === 'ct' ? 'tables' : 'volumes', dirN = child(lvl, dirName, true, { kind: dirName + 'dir' });
       var id = uuid(), nm = a === 'ct' ? 'main.sales.table_' + (counters.t++) : 'main.raw.volume_' + (counters.v++);
       if (lvl.kind === 'catalogid' && NAMES[lvl.name]) nm = NAMES[lvl.name] + (a === 'ct' ? '.ledger.table_' : '.files.volume_') + (a === 'ct' ? counters.t - 1 : counters.v - 1);
       n = child(dirN, id, true, { kind: a === 'ct' ? 'table' : 'volume', sim: true, fresh: true }); NAMES[id] = nm;

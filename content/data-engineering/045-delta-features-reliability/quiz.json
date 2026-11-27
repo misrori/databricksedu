@@ -1,0 +1,22 @@
+[
+  {"q": "A plain Parquet folder and a Delta table hold exactly the same Parquet files. What makes the Delta table able to offer transactions and time travel?",
+   "o": ["A special Delta file format instead of Parquet", "The `_delta_log` transaction log next to the files", "A lock server that runs on the cluster", "Copies of every file kept in a hidden folder"],
+   "c": 1,
+   "e": "The data files are ordinary Parquet. The transaction log records which files belong to each version, and every feature in this module is built on it."},
+  {"q": "You append a DataFrame with a new column `channel` to a Delta table, using `.option(\"mergeSchema\", \"true\")`. What happens to the rows that were already in the table?",
+   "o": ["They are rewritten with an empty `channel` value", "The append fails because the schemas differ", "Nothing is rewritten: old rows read `NULL` for `channel`", "They are deleted and replaced"],
+   "c": 2,
+   "e": "Schema evolution only changes the schema in the log. Existing files are not touched; their rows return NULL for the new column."},
+  {"q": "A MERGE fails with an error about multiple source rows matching the same target row. What is the right fix?",
+   "o": ["Deduplicate the source so each key appears once", "Switch the table to Serializable isolation", "Run OPTIMIZE on the target first", "Add `mergeSchema` to the MERGE"],
+   "c": 0,
+   "e": "MERGE refuses to guess which source row should win. Keep one row per key in the source, for example the latest one."},
+  {"q": "You run `RESTORE TABLE orders TO VERSION AS OF 5` while the table is at version 9. What does the history look like afterwards?",
+   "o": ["Versions 6 to 9 are deleted from the history", "The table is back at version 5 and the next write creates version 6", "Version 5 is copied over version 9", "A new version 10 that has the data of version 5; versions 6 to 9 stay in the history"],
+   "c": 3,
+   "e": "RESTORE is a normal commit. It adds a new version that looks like the old one, so the undo itself is recorded and nothing in the history is rewritten."},
+  {"q": "A stream with `trigger(availableNow=True)` reads a Delta table and has already processed it once. 100 rows are appended to the source. What does the next run of the same stream, with the same checkpoint, read?",
+   "o": ["The whole table again", "Only the 100 new rows", "Nothing until the checkpoint is deleted", "Only the rows that changed since the last OPTIMIZE"],
+   "c": 1,
+   "e": "The checkpoint stores the last source version the stream processed, so the next run reads only the commits after it."}
+]

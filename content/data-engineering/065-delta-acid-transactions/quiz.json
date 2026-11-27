@@ -1,0 +1,22 @@
+[
+  {"q": "A job appends 10 files to a Delta table and crashes after 7 of them, before its commit. What do readers see?",
+   "o": ["7 of the 10 files", "Nothing new: the table is unchanged", "An error until the files are deleted", "All 10 files once the job is restarted"],
+   "c": 1,
+   "e": "Atomicity: data files become part of the table only when the commit file lists them. Without a commit the 7 files are orphans that readers ignore."},
+  {"q": "An `INSERT` of 1,000 rows into a table with `CHECK (quantity > 0)` contains one row with quantity 0. What happens?",
+   "o": ["999 rows are inserted and one is skipped", "All 1,000 rows are inserted with a warning", "The whole INSERT fails and no new version is created", "The bad row is inserted with quantity NULL"],
+   "c": 2,
+   "e": "Consistency and atomicity together: constraints are checked before the commit, and a failed check rejects the whole write."},
+  {"q": "A report sums account balances while an `UPDATE` moves money between two accounts. Which ACID letter guarantees the report never shows a total that never existed?",
+   "o": ["Atomicity", "Consistency", "Durability", "Isolation"],
+   "c": 3,
+   "e": "Isolation: the report reads one snapshot (one version) from start to end, so it sees either all of the update or none of it."},
+  {"q": "A notebook's `INSERT` returned success, then the cluster crashed a second later. Is the inserted data safe?",
+   "o": ["Yes: the data files and the commit were already written to cloud storage", "No: it was still in the cluster's memory", "Only if the table has a checkpoint", "Only if the disk cache was enabled"],
+   "c": 0,
+   "e": "Durability: a Delta write returns only after its commit file exists in object storage, which is replicated and independent of the cluster."},
+  {"q": "Why can a plain Parquet folder not give you consistency?",
+   "o": ["Parquet files cannot store types", "Nothing checks a new file against the existing schema or rules before it becomes visible", "Parquet files are too large", "Spark cannot read more than one Parquet file"],
+   "c": 1,
+   "e": "In a folder, any file that lands there is part of the data. Delta adds a commit step where the schema and constraints are checked first."}
+]

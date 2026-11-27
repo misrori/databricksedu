@@ -390,6 +390,10 @@
     ]
   });
 
+  // more scenes (scenes-more.js): ACID, Iceberg compatibility, open data sharing
+  var MORE = window.DLSB_MORE ? window.DLSB_MORE({ h: h, title: title, list: list, quiz: quiz, esc: esc }) : [];
+  if (MORE[0]) SCENES.push(MORE[0]);
+
   // 5 ── simulator (filled in by sim.js)
   SCENES.push({ id: 'sim', icon: '🧪', title: 'Delta table simulator', big: true,
     sub: 'Run SQL or Python, watch Parquet files and log commits appear, and open every file. A safe sandbox: nothing really runs.',
@@ -591,6 +595,9 @@
     ]
   });
 
+  if (MORE[1]) SCENES.push(MORE[1]);
+  if (MORE[2]) SCENES.push(MORE[2]);
+
   // 8 ── recap
   SCENES.push({
     id: 'recap', icon: '🏁', title: 'The whole story', sub: 'From the beach to a deletion vector, on one page.',
@@ -614,13 +621,15 @@
   // x, y, w: position on the canvas. Frames can be dragged; positions are remembered per viewer.
   var LAYOUT = {
     beach: [60, 90, 320], bucket: [470, 90, 320], explorer: [880, 40, 600], uc: [470, 600, 320], paths: [470, 1060, 320],
-    delta: [1580, 90, 330], sim: [1580, 600, 560], parquet: [2240, 90, 320], dv: [2240, 600, 320], cdf: [1580, 1060, 340], recap: [2240, 1060, 320]
+    delta: [1580, 90, 330], sim: [1580, 600, 560], parquet: [2240, 90, 320], dv: [2240, 600, 320], cdf: [1580, 1060, 340], recap: [2240, 1060, 320],
+    acid: [1000, 1060, 330], iceberg: [1580, 1520, 340], sharing: [2240, 1520, 320]
   };
   var EDGES = [
     ['beach', 'bucket', 'the beach is object storage'], ['bucket', 'explorer', 'look inside a bucket'],
     ['explorer', 'delta', 'sales/orders/ is a Delta table'], ['bucket', 'uc', 'Unity Catalog governs the buckets'],
     ['uc', 'explorer', 'main.sales.orders → this folder'], ['uc', 'paths', 'decode a real storage path'], ['delta', 'sim', 'build one yourself'],
-    ['delta', 'parquet', 'the data files are Parquet'], ['sim', 'dv', 'DELETE with deletion vectors'], ['parquet', 'dv', ''], ['sim', 'cdf', 'what changed? pre- and post-image'], ['dv', 'cdf', ''], ['cdf', 'recap', '']
+    ['delta', 'parquet', 'the data files are Parquet'], ['sim', 'dv', 'DELETE with deletion vectors'], ['parquet', 'dv', ''], ['sim', 'cdf', 'what changed? pre- and post-image'], ['dv', 'cdf', ''], ['cdf', 'recap', ''],
+    ['delta', 'acid', 'four promises: A·C·I·D'], ['acid', 'sim', 'see the commits'], ['cdf', 'iceberg', 'Iceberg clients read it too'], ['iceberg', 'sharing', 'share it, open protocol'], ['sharing', 'recap', '']
   ];
   var pos = {};
   try { pos = JSON.parse(localStorage.getItem('dlsb-pos') || '{}') || {}; } catch (e) { pos = {}; }

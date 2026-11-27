@@ -1,0 +1,22 @@
+[
+  {"q": "You enable UniForm on a 2 TB Delta table. How much extra data storage does it roughly need?",
+   "o": ["Another 2 TB for the Iceberg copy", "About 1 TB, because Iceberg compresses better", "Only small metadata files: the Parquet data files are shared", "Nothing, Iceberg reads the Delta log directly"],
+   "c": 2,
+   "e": "UniForm writes Iceberg metadata (JSON and Avro) that points to the same Parquet files. The data is not copied."},
+  {"q": "Why does UniForm turn on column mapping?",
+   "o": ["Iceberg identifies columns by field id, so every column needs a stable id", "To make queries faster", "Because Iceberg cannot read Parquet", "To encrypt the column names"],
+   "c": 0,
+   "e": "Iceberg schemas use field ids. Column mapping gives each Delta column an id and a physical name, which also makes renames metadata-only."},
+  {"q": "An existing table has deletion vectors. What is the recommended way to enable Iceberg reads with Iceberg v2?",
+   "o": ["Set only `delta.universalFormat.enabledFormats`", "Drop and recreate the table", "Run VACUUM first", "`REORG TABLE t APPLY (UPGRADE UNIFORM(ICEBERG_COMPAT_VERSION = 2))`"],
+   "c": 3,
+   "e": "REORG rewrites the files that carry deletion vectors, disables them, and sets the UniForm properties in one step."},
+  {"q": "An INSERT into a UniForm table commits Delta version 12. When do Iceberg clients see the new rows?",
+   "o": ["Never: Iceberg clients only see version 0", "After the Iceberg metadata for version 12 is generated, shortly after the commit", "Only after OPTIMIZE", "In the same instant, inside the same commit file"],
+   "c": 1,
+   "e": "Iceberg metadata is generated asynchronously after the Delta commit. DESCRIBE EXTENDED shows the last converted Delta version."},
+  {"q": "An external open-source Spark must read a UniForm table. What does it need?",
+   "o": ["Direct write access to the table folder and the Delta jars", "A copy of the table exported to CSV", "The Iceberg Spark runtime and a REST catalog pointing to the Unity Catalog Iceberg endpoint, with a principal that has SELECT", "Nothing: every Spark reads Iceberg by default"],
+   "c": 2,
+   "e": "Iceberg clients use the Unity Catalog Iceberg REST catalog. Unity Catalog checks the usual privileges and hands out the metadata location."}
+]

@@ -1,0 +1,22 @@
+[
+  {"q": "A query filters on `order_date = '2026-08-14'`. How does Delta avoid opening files that cannot contain that date?",
+   "o": ["It opens every file and stops early", "It compares the filter with the min and max values per file stored in the transaction log", "It asks the disk cache which files are relevant", "It reads a separate index table that you must create first"],
+   "c": 1,
+   "e": "Every commit stores per-file statistics in the log. Files whose min and max range cannot match the filter are skipped without being opened."},
+  {"q": "A table uses `CLUSTER BY (customer_id)`. Analysts now filter mostly by `order_date`. What is the cheapest correct change?",
+   "o": ["Recreate the table partitioned by order_date", "Add ZORDER BY (order_date) to every OPTIMIZE", "Copy the data into a second table clustered by order_date", "`ALTER TABLE … CLUSTER BY (order_date)`; later OPTIMIZE runs cluster by the new key"],
+   "c": 3,
+   "e": "Liquid clustering keys can change at any time. The ALTER does not rewrite existing files; OPTIMIZE uses the new key incrementally."},
+  {"q": "Which statement about predictive optimization is true?",
+   "o": ["It runs OPTIMIZE, VACUUM and ANALYZE on Unity Catalog managed tables when they benefit", "It works on any external Parquet folder", "It replaces the transaction log with a faster index", "It must be scheduled as a Lakeflow Job"],
+   "c": 0,
+   "e": "Predictive optimization maintains UC managed tables automatically (Premium plan). It decides which tables need maintenance, so no jobs have to be scheduled."},
+  {"q": "You want an Iceberg engine to read a Delta table with UniForm. Which setting conflicts with it under Iceberg v2?",
+   "o": ["Column mapping", "Liquid clustering", "Deletion vectors", "Change data feed"],
+   "c": 2,
+   "e": "IcebergCompatV2 needs column mapping (set automatically) and cannot be used with deletion vectors, so you disable them when you create the table."},
+  {"q": "A partner company without Databricks needs today's orders every morning. What does Delta Sharing give you compared with exporting CSV files?",
+   "o": ["Faster CSV files", "A live share: the partner reads the current table through the open protocol, without a copy", "A copy of the table in the partner's storage, refreshed nightly", "Nothing: Delta Sharing only works between Databricks workspaces"],
+   "c": 1,
+   "e": "Delta Sharing is open. With open sharing any client connects with a token, and the server hands out short-lived URLs to the current Parquet files."}
+]
